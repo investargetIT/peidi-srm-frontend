@@ -5,8 +5,11 @@ import { addIcon } from "@iconify/vue/dist/offline";
 // @iconify-icons/ep
 import Lollipop from "@iconify-icons/ep/lollipop";
 import HomeFilled from "@iconify-icons/ep/home-filled";
+import suplierIcon from "@iconify-icons/ep/avatar";
+// import cateIcon from "../../../assets/png/cateIcon.png"
 addIcon("ep:lollipop", Lollipop);
 addIcon("ep:home-filled", HomeFilled);
+addIcon("ep:cate", suplierIcon);
 // @iconify-icons/ri
 import Search from "@iconify-icons/ri/search-line";
 import InformationLine from "@iconify-icons/ri/information-line";

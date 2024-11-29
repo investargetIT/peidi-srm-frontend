@@ -65,6 +65,8 @@ const getBreadcrumb = (): void => {
 
 const handleLink = item => {
   const { redirect, name, path } = item;
+  console.log("redirect, name, path", redirect, name, path);
+
   if (redirect) {
     router.push(redirect as any);
   } else {

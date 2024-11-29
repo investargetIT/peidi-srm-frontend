@@ -131,6 +131,7 @@ function resolvePath(routePath) {
             )
           "
         />
+        <!-- <img style="width: 18px;" :src="item.meta.icon" alt=""> -->
       </div>
       <el-text
         v-if="

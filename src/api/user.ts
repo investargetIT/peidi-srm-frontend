@@ -34,12 +34,176 @@ export type RefreshTokenResult = {
   };
 };
 
+export const baseUrlApi = (url: string) => {
+  return `http://srmapi.peidigroup.cn${url}`;
+};
+const commonUrlApi = (url: string) =>
+  `${"https://user.peidigroup.cn"}/user${url}`;
+
 /** 登录 */
 export const getLogin = (data?: object) => {
-  return http.request<UserResult>("post", "/login", { data });
+  return http.request<UserResult>("post", commonUrlApi("/login/password"), {
+    data,
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    }
+  });
 };
 
 /** 刷新`token` */
 export const refreshTokenApi = (data?: object) => {
   return http.request<RefreshTokenResult>("post", "/refresh-token", { data });
+};
+
+// 获取所有分类
+export const getAllCate = params => {
+  return http.request("get", baseUrlApi("/category/all"), {
+    params
+  });
+};
+
+// 获取分页所有分类
+export const getPageCate = params => {
+  return http.request("get", baseUrlApi("/category/page"), {
+    params
+  });
+};
+
+// 添加新的分类
+export const addCate = data => {
+  return http.request("post", baseUrlApi("/category/new"), {
+    data
+  });
+};
+
+// 更改分类信息
+export const updateCate = data => {
+  return http.request("post", baseUrlApi("/category/update"), {
+    data
+  });
+};
+
+// 更改分类信息
+export const deleteCate = data => {
+  return http.request("post", baseUrlApi("/category/delete"), {
+    data
+  });
+};
+
+// 获取所有分类
+export const getAllPd = params => {
+  return http.request("get", baseUrlApi("/product/all"), {
+    params
+  });
+};
+
+// 获取分页所有分类
+export const getPagePd = params => {
+  return http.request("get", baseUrlApi("/product/page"), {
+    params
+  });
+};
+
+// 添加新的产品
+export const addPd = data => {
+  return http.request("post", baseUrlApi("/product/new"), {
+    data
+  });
+};
+
+// 更改产品
+export const updatePd = data => {
+  return http.request("post", baseUrlApi("/product/update"), {
+    data
+  });
+};
+
+// 更改产品
+export const deletePd = data => {
+  return http.request("post", baseUrlApi("/product/delete"), {
+    data
+  });
+};
+
+// 获取产品enum
+export const getEnum = params => {
+  return http.request("get", baseUrlApi("/common/enum"), {
+    params
+  });
+};
+
+// 添加新的报价
+export const addQuota = data => {
+  return http.request("post", baseUrlApi("/quotation/new"), {
+    data
+  });
+};
+
+// 更改报价
+export const updateQuota = data => {
+  return http.request("post", baseUrlApi("/quotation/update"), {
+    data
+  });
+};
+
+// 更改baojia
+export const deleteQuota = data => {
+  return http.request("post", baseUrlApi("/quotation/delete"), {
+    data
+  });
+};
+
+// 获取分页所有报价
+export const getPageQuota = params => {
+  return http.request("get", baseUrlApi("/quotation/page"), {
+    params
+  });
+};
+// 获取分类获取产品
+export const getCatePd = params => {
+  return http.request("get", baseUrlApi("/product/category"), {
+    params
+  });
+};
+
+// 获取服务商
+export const addSupplier = data => {
+  return http.request("post", baseUrlApi("/supplier/new"), {
+    data
+  });
+};
+
+// 获取分页所有报价
+export const getPageSupplier = params => {
+  return http.request("get", baseUrlApi("/supplier/page"), {
+    params
+  });
+};
+
+// 删除公司
+export const deleteSupplier = data => {
+  return http.request("post", baseUrlApi("/supplier/delete"), {
+    data
+  });
+};
+
+// 更新公司
+export const updateSupplier = data => {
+  return http.request("post", baseUrlApi("/supplier/update"), {
+    data
+  });
+};
+
+// 获取所有供应商
+export const getAllSup = params => {
+  return http.request("get", baseUrlApi("/supplier/all"), {
+    params
+  });
+};
+
+// 获取所有供应商
+export const downLoadFile = params => {
+  return http.request("get", baseUrlApi("/common/download"), {
+    params
+  });
 };

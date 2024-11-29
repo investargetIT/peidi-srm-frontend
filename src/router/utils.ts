@@ -191,32 +191,85 @@ function handleAsyncRoutes(routeList) {
 
 /** 初始化路由（`new Promise` 写法防止在异步请求中造成无限循环）*/
 function initRouter() {
-  if (getConfig()?.CachingAsyncRoutes) {
-    // 开启动态路由缓存本地localStorage
-    const key = "async-routes";
-    const asyncRouteList = storageLocal().getItem(key) as any;
-    if (asyncRouteList && asyncRouteList?.length > 0) {
-      return new Promise(resolve => {
-        handleAsyncRoutes(asyncRouteList);
-        resolve(router);
-      });
-    } else {
-      return new Promise(resolve => {
-        getAsyncRoutes().then(({ data }) => {
-          handleAsyncRoutes(cloneDeep(data));
-          storageLocal().setItem(key, data);
-          resolve(router);
-        });
-      });
-    }
-  } else {
-    return new Promise(resolve => {
-      getAsyncRoutes().then(({ data }) => {
-        handleAsyncRoutes(cloneDeep(data));
-        resolve(router);
-      });
-    });
-  }
+  // 固定路由
+  const permissionRouter = {
+    path: "/permission",
+    meta: {
+      title: "权限管理000",
+      icon: "ep:lollipop",
+      rank: 10
+    },
+    children: [
+      {
+        path: "/permission/page/index",
+        name: "PermissionPage",
+        meta: {
+          title: "页面权限",
+          roles: ["admin", "common"]
+        }
+      },
+      {
+        path: "/permission/button",
+        meta: {
+          title: "按钮权限",
+          roles: ["admin", "common"]
+        },
+        children: [
+          {
+            path: "/permission/button/router",
+            component: "permission/button/index",
+            name: "PermissionButtonRouter",
+            meta: {
+              title: "路由返回按钮权限",
+              auths: [
+                "permission:btn:add",
+                "permission:btn:edit",
+                "permission:btn:delete"
+              ]
+            }
+          },
+          {
+            path: "/permission/button/login",
+            component: "permission/button/perms",
+            name: "PermissionButtonLogin",
+            meta: {
+              title: "登录接口返回按钮权限"
+            }
+          }
+        ]
+      }
+    ]
+  };
+  return new Promise(resolve => {
+    handleAsyncRoutes([permissionRouter]);
+    resolve(router);
+  });
+  // if (getConfig()?.CachingAsyncRoutes) {
+  //   // 开启动态路由缓存本地localStorage
+  //   const key = "async-routes";
+  //   const asyncRouteList = storageLocal().getItem(key) as any;
+  //   if (asyncRouteList && asyncRouteList?.length > 0) {
+  //     return new Promise(resolve => {
+  //       handleAsyncRoutes(asyncRouteList);
+  //       resolve(router);
+  //     });
+  //   } else {
+  //     return new Promise(resolve => {
+  //       getAsyncRoutes().then(({ data }) => {
+  //         handleAsyncRoutes(cloneDeep(data));
+  //         storageLocal().setItem(key, data);
+  //         resolve(router);
+  //       });
+  //     });
+  //   }
+  // } else {
+  //   return new Promise(resolve => {
+  //     getAsyncRoutes().then(({ data }) => {
+  //       handleAsyncRoutes(cloneDeep(data));
+  //       resolve(router);
+  //     });
+  //   });
+  // }
 }
 
 /**

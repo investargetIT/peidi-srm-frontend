@@ -1,24 +1,24 @@
 const { VITE_HIDE_HOME } = import.meta.env;
 const Layout = () => import("@/layout/index.vue");
-
+import cateIcon from "../../assets/png/cateIcon.png";
 export default {
   path: "/",
   name: "Home",
+  redirect: "/index",
   component: Layout,
-  redirect: "/welcome",
   meta: {
-    icon: "ep:home-filled",
+    icon: "prime:box",
     title: "首页",
     rank: 0
   },
   children: [
     {
-      path: "/welcome",
-      name: "Welcome",
-      component: () => import("@/views/welcome/index.vue"),
+      path: "/index",
+      name: "category",
+      component: () => import("@/views/classify/index.vue"),
       meta: {
-        title: "首页",
-        showLink: VITE_HIDE_HOME === "true" ? false : true
+        title: "商品分类管理",
+        showParent: false
       }
     }
   ]

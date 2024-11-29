@@ -13,6 +13,8 @@ import { stringify } from "qs";
 import NProgress from "../progress";
 import { getToken, formatToken } from "@/utils/auth";
 import { useUserStoreHook } from "@/store/modules/user";
+import { router, remainingPaths } from "@/router";
+import { emitter } from "@/utils/mitt.ts";
 
 // 相关配置请参考：www.axios-js.com/zh-cn/docs/#axios-request-config-1
 const defaultConfig: AxiosRequestConfig = {
@@ -82,22 +84,27 @@ class PureHttp {
                 const now = new Date().getTime();
                 const expired = parseInt(data.expires) - now <= 0;
                 if (expired) {
-                  if (!PureHttp.isRefreshing) {
-                    PureHttp.isRefreshing = true;
-                    // token过期刷新
-                    useUserStoreHook()
-                      .handRefreshToken({ refreshToken: data.refreshToken })
-                      .then(res => {
-                        const token = res.data.accessToken;
-                        config.headers["Authorization"] = formatToken(token);
-                        PureHttp.requests.forEach(cb => cb(token));
-                        PureHttp.requests = [];
-                      })
-                      .finally(() => {
-                        PureHttp.isRefreshing = false;
-                      });
-                  }
-                  resolve(PureHttp.retryOriginalRequest(config));
+                  // if (!PureHttp.isRefreshing) {
+                  //   PureHttp.isRefreshing = true;
+                  //   // token过期刷新
+                  //   useUserStoreHook()
+                  //     .handRefreshToken({ refreshToken: data.refreshToken })
+                  //     .then(res => {
+                  //       const token = res.data.accessToken;
+                  //       config.headers["Authorization"] = formatToken(token);
+                  //       PureHttp.requests.forEach(cb => cb(token));
+                  //       PureHttp.requests = [];
+                  //     })
+                  //     .finally(() => {
+                  //       PureHttp.isRefreshing = false;
+                  //     });
+                  // }
+                  // resolve(PureHttp.retryOriginalRequest(config));
+
+                  config.headers["Authorization"] = formatToken(
+                    data.accessToken
+                  );
+                  resolve(config);
                 } else {
                   config.headers["Authorization"] = formatToken(
                     data.accessToken
@@ -123,6 +130,10 @@ class PureHttp {
         const $config = response.config;
         // 关闭进度条动画
         NProgress.done();
+        if (response?.data?.code == "100100012") {
+          emitter.emit("logout");
+          return response.data;
+        }
         // 优先判断post/get等方法是否传入回调，否则执行初始化设置等回调
         if (typeof $config.beforeResponseCallback === "function") {
           $config.beforeResponseCallback(response);
@@ -164,6 +175,7 @@ class PureHttp {
       PureHttp.axiosInstance
         .request(config)
         .then((response: undefined) => {
+          console.log("response", response);
           resolve(response);
         })
         .catch(error => {

@@ -33,8 +33,8 @@ dataThemeChange(overallStyle.value);
 const { title } = useNav();
 
 const ruleForm = reactive({
-  username: "admin",
-  password: "admin123"
+  username: "yangxm@peidibrand.com",
+  password: "peidi2024!"
 });
 
 const onLogin = async (formEl: FormInstance | undefined) => {
@@ -43,7 +43,10 @@ const onLogin = async (formEl: FormInstance | undefined) => {
     if (valid) {
       loading.value = true;
       useUserStoreHook()
-        .loginByUsername({ username: ruleForm.username, password: "admin123" })
+        .loginByUsername({
+          username: ruleForm.username,
+          password: ruleForm.password
+        })
         .then(res => {
           if (res.success) {
             // 获取后端路由
@@ -96,7 +99,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="login-box">
         <div class="login-form">
-          <avatar class="avatar" />
+          <!-- <avatar class="avatar" /> -->
           <Motion>
             <h2 class="outline-none">{{ title }}</h2>
           </Motion>

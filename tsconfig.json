@@ -39,15 +39,15 @@
   },
   "include": [
     "mock/*.ts",
+  ],
+  "exclude": [
+    "dist",
+    "**/*.js",
+    "node_modules",
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
     "types/*.d.ts",
     "vite.config.ts"
-  ],
-  "exclude": [
-    "dist",
-    "**/*.js",
-    "node_modules"
   ]
 }

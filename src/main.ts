@@ -7,7 +7,7 @@ import { MotionPlugin } from "@vueuse/motion";
 import { createApp, type Directive } from "vue";
 import { useElementPlus } from "@/plugins/elementPlus";
 import { injectResponsiveStorage } from "@/utils/responsive";
-
+import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 import Table from "@pureadmin/table";
 // import PureDescriptions from "@pureadmin/descriptions";
 
@@ -39,7 +39,9 @@ import {
 app.component("IconifyIconOffline", IconifyIconOffline);
 app.component("IconifyIconOnline", IconifyIconOnline);
 app.component("FontIcon", FontIcon);
-
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component);
+}
 // 全局注册按钮级别权限组件
 import { Auth } from "@/components/ReAuth";
 import { Perms } from "@/components/RePerms";

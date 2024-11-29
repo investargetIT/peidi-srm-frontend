@@ -31,19 +31,110 @@ import {
   multipleTabsKey
 } from "@/utils/auth";
 
+import pdIcon from "../assets/png/prodIcon.png";
+import priceIcon from "../assets/png/priceIcon.png";
+import suplierIcon from "../assets/png/suplierIcon.png";
+
 /** 自动导入全部静态路由，无需再手动引入！匹配 src/router/modules 目录（任何嵌套级别）中具有 .ts 扩展名的所有文件，除了 remaining.ts 文件
  * 如何匹配所有文件请看：https://github.com/mrmlnc/fast-glob#basic-syntax
  * 如何排除文件请看：https://cn.vitejs.dev/guide/features.html#negative-patterns
  */
 const modules: Record<string, any> = import.meta.glob(
-  ["./modules/**/*.ts", "!./modules/**/remaining.ts"],
+  ["./modules/**/*.ts", "!./modules/**/error.ts", "!./modules/**/remaining.ts"],
   {
     eager: true
   }
 );
+const Layout = () => import("@/layout/index.vue");
 
 /** 原始静态路由（未做任何处理） */
-const routes = [];
+const routes = [
+  // {
+  // path: "/classify",
+  // name: "category",
+  // component: () => import("@/views/classify/index.vue"),
+  // meta: {
+  //   title: "商品分类管理",
+  // },
+  //   children: [
+  //   {
+  //     path: "/fighting/index",
+  //     name: "Fighting",
+  //     component: () => import("@/views/fighting/index.vue"),
+  //     meta: {
+  //       title: "加油"
+  //     }
+  //   }
+  // ]
+  // },
+  {
+    path: "/productFile",
+    name: "productFile",
+    redirect: "/productFile/index",
+    component: Layout,
+    meta: {
+      icon: "prime:book",
+      title: "首页",
+      rank: 0
+    },
+    children: [
+      {
+        path: "/productFile/index",
+        name: "productFile",
+        component: () => import("@/views/productFile/index.vue"),
+        meta: {
+          title: "产品档案",
+          showParent: false
+        }
+      }
+    ]
+  },
+  {
+    path: "/quota",
+    name: "quota",
+    redirect: "/quota/index",
+    component: Layout,
+    meta: {
+      icon: "akar-icons:coin",
+      title: "报价管理",
+      rank: 0
+    },
+    children: [
+      {
+        path: "/quota/index",
+        name: "quota",
+        component: () => import("@/views/quota/index.vue"),
+        meta: {
+          title: "报价管理",
+          showParent: false
+        }
+      }
+    ]
+  },
+  {
+    path: "/supplier",
+    name: "supplier",
+    redirect: "/supplier/index",
+    component: Layout,
+    meta: {
+      icon: "flowbite:address-book-outline",
+      title: "供应商管理",
+      rank: 0
+    },
+    children: [
+      {
+        path: "/supplier/index",
+        name: "supplier",
+        component: () => import("@/views/supplier/index.vue"),
+        meta: {
+          title: "供应商管理",
+          showParent: false,
+          icon: "flowbite:address-book-outline"
+        }
+      }
+    ]
+  }
+];
 
 Object.keys(modules).forEach(key => {
   routes.push(modules[key].default);
@@ -134,7 +225,7 @@ router.beforeEach((to: ToRouteType, _from, next) => {
       next({ path: "/error/403" });
     }
     // 开启隐藏首页后在浏览器地址栏手动输入首页welcome路由则跳转到404页面
-    if (VITE_HIDE_HOME === "true" && to.fullPath === "/welcome") {
+    if (VITE_HIDE_HOME === "true" && to.fullPath === "/classify") {
       next({ path: "/error/404" });
     }
     if (_from?.name) {
