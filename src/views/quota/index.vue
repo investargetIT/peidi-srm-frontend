@@ -486,13 +486,21 @@ const quotaRules = ref({
   remarks: [{ required: false, message: "填写产地", trigger: "blur" }]
 });
 const quotaRef = ref(null);
+function handleDownload() {
+  const link = document.createElement("a");
+  link.href = "../../../public/templete.xlsx";
+  link.download = "templete.xlsx"; // 可指定下载后的文件名
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 </script>
 
 <template>
   <div class="container">
     <!-- <img :src="downloadFile1111()" alt=""> -->
     <el-button class="download" type="primary" size="large">
-      <a :href="DOWNLOADFILE_URL">下载报价模版</a>
+      <a @click.prevent="handleDownload">下载报价模版</a>
     </el-button>
 
     <el-upload
