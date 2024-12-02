@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
 import { loginRules } from "./utils/rule";
 import { useNav } from "@/layout/hooks/useNav";
-import type { FormInstance } from "element-plus";
+import { ElMessage, type FormInstance } from "element-plus";
 import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
 import { initRouter, getTopMenu } from "@/router/utils";
@@ -12,12 +12,16 @@ import { bg, avatar, illustration } from "./utils/static";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { ref, reactive, toRaw, onMounted, onBeforeUnmount } from "vue";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
-
+import { initDingH5RemoteDebug } from "dingtalk-h5-remote-debug";
+import { getUserInfo, register } from "../../api/user";
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
 import Lock from "@iconify-icons/ri/lock-fill";
 import User from "@iconify-icons/ri/user-3-fill";
+import * as dd from "dingtalk-jsapi";
 
+const DINGTALK_CORP_ID = "dingfc722e531a4125b735c2f4657eb6378f";
+const DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD = "Aa123456";
 defineOptions({
   name: "Login"
 });
@@ -31,12 +35,11 @@ initStorage();
 const { dataTheme, overallStyle, dataThemeChange } = useDataThemeChange();
 dataThemeChange(overallStyle.value);
 const { title } = useNav();
-
+initDingH5RemoteDebug();
 const ruleForm = reactive({
-  username: "yangxm@peidibrand.com",
-  password: "peidi2024!"
+  username: "",
+  password: ""
 });
-
 const onLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate((valid, fields) => {
@@ -63,6 +66,85 @@ const onLogin = async (formEl: FormInstance | undefined) => {
     }
   });
 };
+const ddLogin = () => {
+  let ddUserEmail = "";
+  dd.runtime.permission.requestAuthCode({
+    corpId: DINGTALK_CORP_ID, // 企业id
+    onSuccess: function (info) {
+      console.log(info);
+      const { code } = info;
+
+      // 通过该免登授权码可以获取用户身份
+      getUserInfo(code)
+        .then(res => {
+          console.log(res);
+          if (res.success) {
+            const { data: ddUserInfo } = res;
+            console.log("ddUserInfo", ddUserInfo);
+            const { org_email, name } = ddUserInfo;
+            if (org_email) {
+              console.log("ddEmail", org_email);
+              ddUserEmail = org_email;
+              // 获取到钉钉用户企业邮箱，调用注册接口
+              ruleForm.username = ddUserEmail;
+              ruleForm.password = DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD;
+              return register({
+                email: org_email,
+                emailCode: "",
+                password: DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD,
+                username: name
+              });
+            } else {
+              message("获取钉钉用户企业邮箱失败：" + JSON.stringify(res), {
+                type: "error"
+              });
+            }
+          } else {
+            message("用户注册失败：" + JSON.stringify(res), { type: "error" });
+          }
+        })
+        .then(res => {
+          if (res) {
+            if (
+              res.success ||
+              (res.code === 100100002 &&
+                res.msg === "EMAIL_ACCOUNT_ALREADY_EXIST")
+            ) {
+              // 注册成功，调用登录接口
+
+              // return request(process.env.USER_AUTH_BASE_URL + '/user/login/password', {
+              //   method: 'POST',
+              //   data: `username=${ddUserEmail}&password=${process.env.DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD}`,
+              // });
+              onLogin(ruleFormRef.value);
+            } else {
+              message("用户注册失败：" + JSON.stringify(res), {
+                type: "error"
+              });
+            }
+          }
+        })
+        .then(res => {
+          if (res) {
+            if (res.success) {
+              localStorage.setItem("token", res.data);
+              // 登录成功，跳转到指定页面
+              const urlParams = new URL(window.location.href).searchParams;
+              window.location.href = urlParams.get("redirect") || "/";
+            } else {
+              setErrMsg("用户登录失败：" + JSON.stringify(res));
+            }
+          }
+        });
+    },
+    onFail: function (err) {
+      // setErrMsg('获取钉钉免登授权码失败：' + JSON.stringify(err))
+      message(JSON.stringify(err), { type: "error" });
+    }
+  });
+};
+
+ddLogin();
 
 /** 使用公共函数，避免`removeEventListener`失效 */
 function onkeypress({ code }: KeyboardEvent) {

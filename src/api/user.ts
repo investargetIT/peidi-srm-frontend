@@ -35,7 +35,7 @@ export type RefreshTokenResult = {
 };
 
 export const baseUrlApi = (url: string) => {
-  return `http://srmapi.peidigroup.cn${url}`;
+  return `https://srm.peidigroup.cn${url}`;
 };
 const commonUrlApi = (url: string) =>
   `${"https://user.peidigroup.cn"}/user${url}`;
@@ -48,6 +48,26 @@ export const getLogin = (data?: object) => {
       "Content-Type": "application/x-www-form-urlencoded"
     }
   });
+};
+
+// 根据code拿到个人信息
+export const getUserInfo = code => {
+  return http.request(
+    "get",
+    `https://omsapi.peidigroup.cn/ding/userInfo?code=${code}`,
+    {}
+  );
+};
+
+// 注册
+export const register = data => {
+  return http.request(
+    "post",
+    `https://user.peidigroup.cn/user/email-register`,
+    {
+      data
+    }
+  );
 };
 
 /** 刷新`token` */
