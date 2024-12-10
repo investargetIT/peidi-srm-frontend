@@ -86,7 +86,7 @@ const getAllCateFun = () => {
   });
 };
 const pageSizeArr = ref([5, 10, 15, 20]);
-const pageSize = ref(pageSizeArr.value[0]);
+const pageSize = ref(pageSizeArr.value[3]);
 const total = ref(0);
 
 const handleSizeChange = (val: number) => {
@@ -488,7 +488,7 @@ const quotaRules = ref({
 const quotaRef = ref(null);
 function handleDownload() {
   const link = document.createElement("a");
-  link.href = "../../../public/templete.xlsx";
+  link.href = "/templete.xlsx";
   link.download = "templete.xlsx"; // 可指定下载后的文件名
   document.body.appendChild(link);
   link.click();

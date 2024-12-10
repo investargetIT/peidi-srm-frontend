@@ -17,7 +17,7 @@ const tableData = ref([]);
 
 const currentPage = ref([]);
 const pageSizeArr = ref([5, 10, 15, 20]);
-const pageSize = ref(pageSizeArr.value[0]);
+const pageSize = ref(pageSizeArr.value[3]);
 
 const handleSizeChange = (val: number) => {
   pageSize.value = val;

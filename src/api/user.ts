@@ -35,7 +35,7 @@ export type RefreshTokenResult = {
 };
 
 export const baseUrlApi = (url: string) => {
-  return `https://srm.peidigroup.cn${url}`;
+  return `https://srmapi.peidigroup.cn${url}`;
 };
 const commonUrlApi = (url: string) =>
   `${"https://user.peidigroup.cn"}/user${url}`;

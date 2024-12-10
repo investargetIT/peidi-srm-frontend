@@ -65,8 +65,8 @@ const getAllPd = () => {
     }
   });
 };
-const pageSizeArr = ref([5, 10, 15, 2]);
-const pageSize = ref(pageSizeArr.value[0]);
+const pageSizeArr = ref([5, 10, 15, 20]);
+const pageSize = ref(pageSizeArr.value[3]);
 const total = ref(0);
 
 const handleSizeChange = (val: number) => {

@@ -43,7 +43,7 @@ const getAllCateFun = () => {
   });
 };
 const pageSizeArr = ref([5, 10, 15, 20]);
-const pageSize = ref(pageSizeArr.value[0]);
+const pageSize = ref(pageSizeArr.value[3]);
 const total = ref(0);
 
 const handleSizeChange = (val: number) => {
@@ -81,7 +81,7 @@ const clearnewProdctData = () => {
     // "managementLevelName": "",
     // 品名
     productName: "",
-    // 规格
+    // 尺寸
     specification: "",
     // 单位 buchuan
     // 常年正常供应
@@ -136,7 +136,7 @@ const newProdctData = ref({
 
   // 品名
   productName: "",
-  // 规格
+  // 尺寸
   specification: "",
   // 单位 buchuan
   // 常年正常供应
@@ -249,7 +249,7 @@ const pdRules = {
     { required: true, message: "请选择管理等级分类", trigger: "change" }
   ],
   productName: [{ required: true, message: "请输入品名", trigger: "blur" }],
-  specification: [{ required: true, message: "请输入规格", trigger: "blur" }],
+  specification: [{ required: true, message: "请输入尺寸", trigger: "blur" }],
   supplyAllYea: [
     { required: true, message: "请输入常年正常供应", trigger: "blur" }
   ]
@@ -274,7 +274,7 @@ const pdRules = {
       <el-table-column prop="categoryName" label="主分类" />
       <el-table-column prop="managementLevelName" label="管理等级" />
       <el-table-column prop="productName" label="品名" />
-      <el-table-column prop="specification" label="规格" />
+      <el-table-column prop="specification" label="尺寸" />
       <el-table-column
         label="单位"
         :formatter="
@@ -366,7 +366,7 @@ const pdRules = {
         </el-form-item>
         <el-form-item
           prop="specification"
-          label="规格"
+          label="尺寸"
           :label-width="formLabelWidth"
         >
           <el-input
@@ -449,7 +449,7 @@ const pdRules = {
           />
         </el-form-item>
         <el-form-item
-          label="规格"
+          label="尺寸"
           prop="specification"
           :label-width="formLabelWidth"
         >
