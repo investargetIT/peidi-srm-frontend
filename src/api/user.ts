@@ -59,6 +59,17 @@ export const getUserInfo = code => {
   );
 };
 
+// 拿到metabase的id
+export const getMetaId = params => {
+  return http.request(
+    "get",
+    `https://user.peidigroup.cn/transpond/newbi-session`,
+    {
+      params
+    }
+  );
+};
+
 // 注册
 export const register = data => {
   return http.request(

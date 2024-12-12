@@ -13,7 +13,7 @@ import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { ref, reactive, toRaw, onMounted, onBeforeUnmount } from "vue";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 import { initDingH5RemoteDebug } from "dingtalk-h5-remote-debug";
-import { getUserInfo, register } from "../../api/user";
+import { getUserInfo, register, getMetaId } from "../../api/user";
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
 import Lock from "@iconify-icons/ri/lock-fill";
@@ -21,7 +21,7 @@ import User from "@iconify-icons/ri/user-3-fill";
 import * as dd from "dingtalk-jsapi";
 
 const DINGTALK_CORP_ID = "dingfc722e531a4125b735c2f4657eb6378f";
-const DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD = "Aa123456";
+const DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD = "MtVZ8J:jr47Rira";
 defineOptions({
   name: "Login"
 });
@@ -40,6 +40,22 @@ const ruleForm = reactive({
   username: "",
   password: ""
 });
+function setCookie(name, value, options = {}) {
+  let cookieString = `${name}=${value}`;
+  for (let option in options) {
+    if (option === "path") {
+      cookieString += `; path=${options[option]}`;
+    } else if (option === "domain") {
+      cookieString += `; domain=${options[option]}`;
+    }
+    // 还可以添加其他如 expires、secure等属性的设置
+  }
+  document.cookie = cookieString;
+}
+
+// let token = "your_token_value";
+// setCookie('metabase.SESSION', token, { path: '/', domain: '.peidigroup.cn' });
+
 const onLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate((valid, fields) => {
@@ -85,14 +101,14 @@ const ddLogin = () => {
             if (org_email) {
               console.log("ddEmail", org_email);
               ddUserEmail = org_email;
+              // test
+              // ddUserEmail = 'dongsq@peidibrand.com'
               // 获取到钉钉用户企业邮箱，调用注册接口
               ruleForm.username = ddUserEmail;
               ruleForm.password = DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD;
-              return register({
-                email: org_email,
-                emailCode: "",
+              return getMetaId({
                 password: DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD,
-                username: name
+                username: ddUserEmail
               });
             } else {
               message("获取钉钉用户企业邮箱失败：" + JSON.stringify(res), {
@@ -105,23 +121,19 @@ const ddLogin = () => {
         })
         .then(res => {
           if (res) {
-            if (
-              res.success ||
-              (res.code === 100100002 &&
-                res.msg === "EMAIL_ACCOUNT_ALREADY_EXIST")
-            ) {
-              // 注册成功，调用登录接口
-
-              // return request(process.env.USER_AUTH_BASE_URL + '/user/login/password', {
-              //   method: 'POST',
-              //   data: `username=${ddUserEmail}&password=${process.env.DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD}`,
-              // });
-              onLogin(ruleFormRef.value);
-            } else {
-              message("用户注册失败：" + JSON.stringify(res), {
-                type: "error"
+            console.log("res", res);
+            const { code, data } = res;
+            if (code == 200) {
+              let token = data;
+              setCookie("metabase.SESSION", token, {
+                path: "/",
+                domain: ".peidigroup.cn"
               });
+              location.href = "https://newbi.peidigroup.cn/";
+            } else {
+              message("获取metaid失败", { type: "error" });
             }
+            return;
           }
         })
         .then(res => {
@@ -163,7 +175,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="select-none">
+  <div style="display: none" class="select-none">
     <img :src="bg" class="wave" />
     <div class="flex-c absolute right-5 top-3">
       <!-- 主题 -->
