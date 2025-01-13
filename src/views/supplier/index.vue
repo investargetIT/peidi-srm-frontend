@@ -14,6 +14,7 @@ import { baseUrlApi, getCatePd } from "../../api/user";
 import { getToken, formatToken } from "@/utils/auth";
 import { getLastItem } from "../../utils/fun";
 import * as XLSX from "xlsx";
+import { debounce } from "@pureadmin/utils";
 defineOptions({
   name: "Welcome"
 });
@@ -75,9 +76,25 @@ const handleSizeChange = (val: number) => {
 const currentPageNum = ref(1);
 
 const getCurrentPage = () => {
+  const searchStr: any = [];
+  if (searchInfo.value.supplierName) {
+    searchStr.push({
+      searchName: "companyName",
+      searchType: "like",
+      searchValue: searchInfo.value.supplierName
+    });
+  }
+  if (searchInfo.value.supplierPerson) {
+    searchStr.push({
+      searchName: "contactInfo",
+      searchType: "like",
+      searchValue: searchInfo.value.supplierPerson
+    });
+  }
   getPageSupplier({
     pageNo: Number(currentPageNum.value),
-    pageSize: Number(pageSize.value)
+    pageSize: Number(pageSize.value),
+    searchStr: JSON.stringify(searchStr)
   }).then(res => {
     console.log("res", res);
     if (res?.code) {
@@ -522,7 +539,9 @@ const exportOut = () => {
   }
   console.log("selectedRows.value", selectedRows.value);
   // 获取数据
-  const data = [["公司名称", "地址", "联系方式", "联系人", "供应商类型"]];
+  const data = [
+    ["公司名称", "地址", "联系方式", "联系人", "供应商类型", "供应产品"]
+  ];
   selectedRows.value.map(item => {
     let arr = [];
     arr.push(item.companyName);
@@ -530,6 +549,7 @@ const exportOut = () => {
     arr.push(item.contactInfoWay.join(","));
     arr.push(item.contactInfoPerson.join(","));
     arr.push(item.supplierGradeName);
+    arr.push(item.supplierProductName.join(","));
     data.push(JSON.parse(JSON.stringify(arr)));
   });
   // 创建 Workbook 对象
@@ -568,6 +588,20 @@ const handlePictureCardPreview = uploadFile => {
   dialogVisible.value = true;
 };
 
+const searchInfo = ref({
+  supplierName: "",
+  supplierPerson: ""
+});
+
+// searchInfo变动时重新获取数据，但是不能调用搜索太频繁了
+watch(
+  [searchInfo],
+  () => {
+    debounce(getCurrentPage, 500)();
+  },
+  { deep: true }
+);
+
 getAllCateFun();
 getCurrentPage();
 getEnums();
@@ -576,6 +610,18 @@ getAllPd();
 
 <template>
   <div class="container">
+    <div class="button-con absolute top-2 left-[60px] flex gap-2">
+      <el-input
+        v-model="searchInfo.supplierName"
+        style="width: 240px"
+        placeholder="请输入公司名称"
+      />
+      <el-input
+        v-model="searchInfo.supplierPerson"
+        style="width: 240px"
+        placeholder="请输入公司联系人"
+      />
+    </div>
     <el-button class="exportbtn" type="primary" size="large" @click="exportOut">
       导出所选供应商({{ selectedRowCount }})
     </el-button>
@@ -600,9 +646,10 @@ getAllPd();
       <el-table-column type="selection" width="55" />
       <el-table-column prop="companyName" label="公司名称" />
       <el-table-column prop="companyAddress" label="地址" />
-      <el-table-column prop="contactInfoPerson" label="联系方式" />
-      <el-table-column prop="contactInfoWay" label="联系人" />
+      <el-table-column prop="contactInfoWay" label="联系方式" />
+      <el-table-column prop="contactInfoPerson" label="联系人" />
       <el-table-column prop="supplierGradeName" label="供应商类型" />
+      <el-table-column prop="supplierProductName" label="供应产品" />
       <el-table-column fixed="right" label="操作" min-width="120">
         <template #default="scope">
           <el-button
@@ -752,6 +799,7 @@ getAllPd();
               <el-select
                 v-model="newSupplierData.categoryId"
                 :placeholder="activeCateData.categoryName"
+                filterable
               >
                 <el-option
                   v-for="item in allCateData"
@@ -763,7 +811,11 @@ getAllPd();
           </el-col>
           <el-col :span="12">
             <el-form-item prop="supplierProduct" label="供应产品">
-              <el-select multiple v-model="newSupplierData.supplierProduct">
+              <el-select
+                filterable
+                multiple
+                v-model="newSupplierData.supplierProduct"
+              >
                 <el-option
                   v-for="item in cateAllPd"
                   :label="item.productName"

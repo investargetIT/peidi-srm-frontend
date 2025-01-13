@@ -21,6 +21,7 @@ import User from "@iconify-icons/ri/user-3-fill";
 import * as dd from "dingtalk-jsapi";
 
 const DINGTALK_CORP_ID = "dingfc722e531a4125b735c2f4657eb6378f";
+// const DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD = "Aa123456";
 const DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD = "Aa123456";
 defineOptions({
   name: "Login"

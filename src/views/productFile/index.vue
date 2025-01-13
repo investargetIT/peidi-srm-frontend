@@ -9,6 +9,7 @@ import {
 } from "@/api/user";
 import { ref, watch } from "vue";
 import { message } from "@/utils/message";
+import { debounce } from "@pureadmin/utils";
 
 defineOptions({
   name: "Welcome"
@@ -50,11 +51,41 @@ const handleSizeChange = (val: number) => {
   pageSize.value = val;
 };
 const currentPageNum = ref(1);
+const searchInfo = ref({
+  categoryName: "",
+  productName: ""
+});
 
+// searchInfo变动时重新获取数据，但是不能调用搜索太频繁了
+watch(
+  [searchInfo],
+  () => {
+    debounce(() => {
+      getCurrentPage();
+    }, 500)();
+  },
+  { deep: true }
+);
 const getCurrentPage = () => {
+  const searchStr: any = [];
+  if (searchInfo.value.categoryName) {
+    searchStr.push({
+      searchName: "categoryName",
+      searchType: "like",
+      searchValue: searchInfo.value.categoryName
+    });
+  }
+  if (searchInfo.value.productName) {
+    searchStr.push({
+      searchName: "productName",
+      searchType: "like",
+      searchValue: searchInfo.value.productName
+    });
+  }
   getPagePd({
     pageNo: Number(currentPageNum.value),
-    pageSize: Number(pageSize.value)
+    pageSize: Number(pageSize.value),
+    searchStr: JSON.stringify(searchStr)
   }).then(res => {
     console.log("res", res);
     if (res?.code) {
@@ -258,6 +289,18 @@ const pdRules = {
 
 <template>
   <div class="container">
+    <div class="button-con absolute top-2 left-[60px] flex gap-2">
+      <el-input
+        v-model="searchInfo.categoryName"
+        style="width: 240px"
+        placeholder="请输入主分类"
+      />
+      <el-input
+        v-model="searchInfo.productName"
+        style="width: 240px"
+        placeholder="请输入品名"
+      />
+    </div>
     <el-button
       class="addCate"
       type="primary"
