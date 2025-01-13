@@ -70,6 +70,26 @@ export const register = data => {
   );
 };
 
+// 发送验证码
+export const sendCodeApi = data => {
+  return http.request("post", `https://user.peidigroup.cn/user/validate-code`, {
+    data,
+    headers: {
+      PLATFORM: "srm"
+    }
+  });
+};
+
+// 调用注册接口
+export const registerApi = data => {
+  return http.request("post", `https://user.peidigroup.cn/user/sms-register`, {
+    data,
+    headers: {
+      PLATFORM: "srm"
+    }
+  });
+};
+
 /** 刷新`token` */
 export const refreshTokenApi = (data?: object) => {
   return http.request<RefreshTokenResult>("post", "/refresh-token", { data });

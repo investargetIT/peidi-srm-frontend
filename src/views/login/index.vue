@@ -14,6 +14,7 @@ import { ref, reactive, toRaw, onMounted, onBeforeUnmount } from "vue";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 import { initDingH5RemoteDebug } from "dingtalk-h5-remote-debug";
 import { getUserInfo, register } from "../../api/user";
+import registerCom from "./register.vue";
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
 import Lock from "@iconify-icons/ri/lock-fill";
@@ -155,12 +156,30 @@ function onkeypress({ code }: KeyboardEvent) {
 }
 
 onMounted(() => {
+  checkSourceParam();
   window.document.addEventListener("keypress", onkeypress);
 });
 
 onBeforeUnmount(() => {
   window.document.removeEventListener("keypress", onkeypress);
 });
+
+const showRegisterLink = ref(false);
+const showRegisterDialog = ref(false);
+
+function checkSourceParam() {
+  const urlParams = new URLSearchParams(window.location.search);
+  console.log("urlParams", urlParams);
+
+  if (urlParams.has("source")) {
+    showRegisterLink.value = true;
+  }
+}
+function openRegisterDialog() {
+  console.log("dddd");
+
+  showRegisterDialog.value = true;
+}
 </script>
 
 <template>
@@ -224,7 +243,6 @@ onBeforeUnmount(() => {
                 />
               </el-form-item>
             </Motion>
-
             <Motion :delay="250">
               <el-button
                 class="w-full mt-4"
@@ -236,11 +254,20 @@ onBeforeUnmount(() => {
                 登录
               </el-button>
             </Motion>
+            <a
+              href="#"
+              v-if="showRegisterLink"
+              @click.prevent="openRegisterDialog"
+              class="text-xs text-gray-500 float-left mt-2"
+              style="text-decoration: underline"
+              >注册账号</a
+            >
           </el-form>
         </div>
       </div>
     </div>
   </div>
+  <registerCom v-model:showRegisterDialog="showRegisterDialog" />
 </template>
 
 <style scoped>
