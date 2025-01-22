@@ -133,6 +133,29 @@ const routes = [
         }
       }
     ]
+  },
+  {
+    path: "/yearSum",
+    name: "yearSum",
+    redirect: "/yearSum/index",
+    component: Layout,
+    meta: {
+      icon: "prime:book",
+      title: "年度采购汇总",
+      rank: 0
+    },
+    children: [
+      {
+        path: "/yearSum/index",
+        name: "yearSum",
+        component: () => import("@/views/yearSum/index.vue"),
+        meta: {
+          title: "年度采购汇总",
+          showParent: false,
+          icon: "prime:book"
+        }
+      }
+    ]
   }
 ];
 

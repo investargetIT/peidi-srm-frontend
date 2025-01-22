@@ -247,3 +247,24 @@ export const downLoadFile = params => {
     params
   });
 };
+
+// 获取年度采购列表
+export const getYearList = params => {
+  return http.request("get", baseUrlApi("/purchase/list"), {
+    params
+  });
+};
+
+// 更新年度采购列表
+export const updateYearList = data => {
+  return http.request("post", baseUrlApi("/purchase/update"), {
+    data
+  });
+};
+
+// 删除一项采购列表
+export const deleteYearList = data => {
+  return http.request("post", baseUrlApi("/purchase/delete"), {
+    data
+  });
+};
