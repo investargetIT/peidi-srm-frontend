@@ -11,7 +11,7 @@ import type {
 } from "./types.d";
 import { stringify } from "qs";
 import NProgress from "../progress";
-import { getToken, formatToken } from "@/utils/auth";
+import { getToken, formatToken, getUserDataSource } from "@/utils/auth";
 import { useUserStoreHook } from "@/store/modules/user";
 import { router, remainingPaths } from "@/router";
 import { emitter } from "@/utils/mitt.ts";
@@ -54,6 +54,8 @@ class PureHttp {
     return new Promise(resolve => {
       PureHttp.requests.push((token: string) => {
         config.headers["Authorization"] = formatToken(token);
+        config.headers["dataSource"] = getUserDataSource();
+
         resolve(config);
       });
     });
@@ -104,11 +106,16 @@ class PureHttp {
                   config.headers["Authorization"] = formatToken(
                     data.accessToken
                   );
+
+                  config.headers["dataSource"] = getUserDataSource();
+
                   resolve(config);
                 } else {
                   config.headers["Authorization"] = formatToken(
                     data.accessToken
                   );
+                  config.headers["dataSource"] = getUserDataSource();
+
                   resolve(config);
                 }
               } else {

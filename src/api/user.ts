@@ -90,6 +90,13 @@ export const registerApi = data => {
   });
 };
 
+// 获取用户dataSource字段
+export const getUserDataSource = params => {
+  return http.request("get", `https://user.peidigroup.cn/user/user-check`, {
+    params
+  });
+};
+
 /** 刷新`token` */
 export const refreshTokenApi = (data?: object) => {
   return http.request<RefreshTokenResult>("post", "/refresh-token", { data });
