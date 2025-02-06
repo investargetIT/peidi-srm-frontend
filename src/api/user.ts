@@ -1,5 +1,5 @@
 import { http } from "@/utils/http";
-
+import { getUserDataSource } from "@/utils/auth";
 export type UserResult = {
   success: boolean;
   data: {
@@ -91,7 +91,7 @@ export const registerApi = data => {
 };
 
 // 获取用户dataSource字段
-export const getUserDataSource = params => {
+export const getUserDataSourceApi = params => {
   return http.request("get", `https://user.peidigroup.cn/user/user-check`, {
     params
   });
@@ -105,14 +105,32 @@ export const refreshTokenApi = (data?: object) => {
 // 获取所有分类
 export const getAllCate = params => {
   return http.request("get", baseUrlApi("/category/all"), {
-    params
+    params: {
+      ...params,
+      searchStr: JSON.stringify([
+        {
+          searchName: "dataSource",
+          searchType: "equals",
+          searchValue: getUserDataSource()
+        }
+      ])
+    }
   });
 };
 
 // 获取分页所有分类
 export const getPageCate = params => {
   return http.request("get", baseUrlApi("/category/page"), {
-    params
+    params: {
+      ...params,
+      searchStr: JSON.stringify([
+        {
+          searchName: "dataSource",
+          searchType: "equals",
+          searchValue: getUserDataSource()
+        }
+      ])
+    }
   });
 };
 
@@ -203,7 +221,16 @@ export const deleteQuota = data => {
 // 获取分页所有报价
 export const getPageQuota = params => {
   return http.request("get", baseUrlApi("/quotation/page"), {
-    params
+    params: {
+      ...params,
+      searchStr: JSON.stringify([
+        {
+          searchName: "dataSource",
+          searchType: "equals",
+          searchValue: getUserDataSource()
+        }
+      ])
+    }
   });
 };
 // 获取分类获取产品

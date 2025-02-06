@@ -113,7 +113,8 @@ function register() {
         mobile: form.value.phone,
         mobileCode: form.value.code,
         password: form.value.password,
-        username: form.value.phone
+        username: form.value.phone,
+        dataSource: 2
       }).then(res => {
         if (res.code !== 200) {
           if (codeMap.find(item => item.code === res.code)) {

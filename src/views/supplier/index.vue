@@ -11,7 +11,7 @@ import {
 import { ref, watch } from "vue";
 import { message } from "@/utils/message";
 import { baseUrlApi, getCatePd } from "../../api/user";
-import { getToken, formatToken } from "@/utils/auth";
+import { getToken, formatToken, getUserDataSource } from "@/utils/auth";
 import { getLastItem } from "../../utils/fun";
 import * as XLSX from "xlsx";
 import { debounce } from "@pureadmin/utils";
@@ -91,6 +91,11 @@ const getCurrentPage = () => {
       searchValue: searchInfo.value.supplierPerson
     });
   }
+  searchStr.push({
+    searchName: "dataSource",
+    searchType: "equals",
+    searchValue: getUserDataSource()
+  });
   getPageSupplier({
     pageNo: Number(currentPageNum.value),
     pageSize: Number(pageSize.value),

@@ -149,7 +149,5 @@ export const hasPerms = (value: string | Array<string>): boolean => {
 // 获取用户localStorage的dataSource字段信息
 export function getUserDataSource() {
   const dataSource = storageLocal().getItem("dataSource")?.dataSource || null;
-  console.log("dataSource", dataSource, storageLocal().getItem("dataSource"));
-
   return dataSource;
 }

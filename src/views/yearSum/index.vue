@@ -356,6 +356,7 @@ import {
   updateYearList,
   deleteYearList
 } from "@/api/user.ts";
+import { getUserDataSource } from "@/utils/auth.ts";
 const selectedYear = ref(null);
 selectedYear.value = 2022;
 const uniqueYears = computed(() => {
@@ -370,11 +371,18 @@ const filterTableData = () => {
 
 const getYearListFun = () => {
   getYearList({
-    searchStr: JSON.stringify({
-      searchName: "year",
-      searchType: "equals",
-      searchValue: selectedYear.value
-    })
+    searchStr: JSON.stringify([
+      {
+        searchName: "year",
+        searchType: "equals",
+        searchValue: selectedYear.value
+      },
+      {
+        searchName: "dataSource",
+        searchType: "equals",
+        searchValue: getUserDataSource()
+      }
+    ])
   }).then(res => {
     const { data } = res;
     tableData.value = data;

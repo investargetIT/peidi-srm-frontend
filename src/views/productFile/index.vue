@@ -10,7 +10,7 @@ import {
 import { ref, watch } from "vue";
 import { message } from "@/utils/message";
 import { debounce } from "@pureadmin/utils";
-
+import { getUserDataSource } from "@/utils/auth.ts";
 defineOptions({
   name: "Welcome"
 });
@@ -82,6 +82,11 @@ const getCurrentPage = () => {
       searchValue: searchInfo.value.productName
     });
   }
+  searchStr.push({
+    searchName: "dataSource",
+    searchType: "equals",
+    searchValue: getUserDataSource()
+  });
   getPagePd({
     pageNo: Number(currentPageNum.value),
     pageSize: Number(pageSize.value),
