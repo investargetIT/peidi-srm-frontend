@@ -101,8 +101,11 @@ const ddLogin = () => {
             if (org_email) {
               console.log("ddEmail", org_email);
               ddUserEmail = org_email;
+              message("获取钉钉用户企业邮箱成功：" + org_email, {
+                type: "success"
+              });
               // test
-              // ddUserEmail = 'dongsq@peidibrand.com'
+              // ddUserEmail = "dongsq@peidibrand.com";
               // 获取到钉钉用户企业邮箱，调用注册接口
               ruleForm.username = ddUserEmail;
               ruleForm.password = DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD;
@@ -131,7 +134,9 @@ const ddLogin = () => {
               });
               location.href = "https://newbi.peidigroup.cn/";
             } else {
-              message("获取metaid失败", { type: "error" });
+              message("获取metaid失败" + JSON.stringify(res), {
+                type: "error"
+              });
             }
             return;
           }

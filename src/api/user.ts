@@ -35,7 +35,7 @@ export type RefreshTokenResult = {
 };
 
 export const baseUrlApi = (url: string) => {
-  return `https://srmapi.peidigroup.cn${url}`;
+  return `https://api.peidigroup.cn/srm${url}`;
 };
 const commonUrlApi = (url: string) =>
   `${"https://user.peidigroup.cn"}/user${url}`;
@@ -54,7 +54,7 @@ export const getLogin = (data?: object) => {
 export const getUserInfo = code => {
   return http.request(
     "get",
-    `https://omsapi.peidigroup.cn/ding/userInfo?code=${code}`,
+    `https://api.peidigroup.cn/oms/ding/userInfo?code=${code}`,
     {}
   );
 };
