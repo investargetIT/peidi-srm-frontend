@@ -106,7 +106,6 @@ const ddLogin = () => {
               });
               // test
               // ddUserEmail = "dongsq@peidibrand.com";
-              // 获取到钉钉用户企业邮箱，调用注册接口
               ruleForm.username = ddUserEmail;
               ruleForm.password = DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD;
               return getMetaId({
