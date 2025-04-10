@@ -353,6 +353,7 @@ const pdRules = {
     </el-button>
     <el-table :data="currentPage" :row-class-name="addClass" style="width: 90%">
       <el-table-column fixed prop="materialCode" label="料号" />
+      <el-table-column fixed prop="userId" label="信息维护人" />
       <el-table-column prop="categoryName" label="主分类" />
       <el-table-column prop="managementLevelName" label="管理等级" />
       <el-table-column prop="productName" label="品名" />
