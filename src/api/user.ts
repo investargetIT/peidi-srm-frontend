@@ -104,16 +104,9 @@ export const refreshTokenApi = (data?: object) => {
 
 // 获取所有分类
 export const getAllCate = params => {
-  return http.request("get", baseUrlApi("/category/all"), {
+  return http.request("get", baseUrlApi("/category/list"), {
     params: {
-      ...params,
-      searchStr: JSON.stringify([
-        {
-          searchName: "dataSource",
-          searchType: "equals",
-          searchValue: getUserDataSource()
-        }
-      ])
+      ...params
     }
   });
 };
@@ -122,14 +115,7 @@ export const getAllCate = params => {
 export const getPageCate = params => {
   return http.request("get", baseUrlApi("/category/page"), {
     params: {
-      ...params,
-      searchStr: JSON.stringify([
-        {
-          searchName: "dataSource",
-          searchType: "equals",
-          searchValue: getUserDataSource()
-        }
-      ])
+      ...params
     }
   });
 };
@@ -157,7 +143,7 @@ export const deleteCate = data => {
 
 // 获取所有分类
 export const getAllPd = params => {
-  return http.request("get", baseUrlApi("/product/all"), {
+  return http.request("get", baseUrlApi("/product/list"), {
     params
   });
 };

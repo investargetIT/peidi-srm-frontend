@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  baseUrlApi,
   getEnum,
   getAllCate,
   addPd,
@@ -7,10 +8,10 @@ import {
   deletePd,
   getPagePd
 } from "@/api/user";
-import { ref, watch } from "vue";
+import { ref, watch, ToRefs, toRefs } from "vue";
 import { message } from "@/utils/message";
 import { debounce } from "@pureadmin/utils";
-import { getUserDataSource } from "@/utils/auth.ts";
+import { getUserDataSource, formatToken, getToken } from "@/utils/auth.ts";
 defineOptions({
   name: "Welcome"
 });
@@ -82,11 +83,7 @@ const getCurrentPage = () => {
       searchValue: searchInfo.value.productName
     });
   }
-  searchStr.push({
-    searchName: "dataSource",
-    searchType: "equals",
-    searchValue: getUserDataSource()
-  });
+
   getPagePd({
     pageNo: Number(currentPageNum.value),
     pageSize: Number(pageSize.value),
@@ -122,7 +119,15 @@ const clearnewProdctData = () => {
     // 单位 buchuan
     // 常年正常供应
     supplyAllYea: "",
-    unit: "公斤"
+    unit: "公斤",
+    // 英文名
+    enName: "",
+    // 价格
+    referenceCost: "",
+    // 收获季节
+    harvestSeason: "",
+    // 照片
+    photoList: []
   };
 };
 
@@ -133,12 +138,21 @@ const addCateData = async () => {
   if (!pdNewRef.value) return;
   await pdNewRef.value.validate((valid, fields) => {
     if (valid) {
+      console.log("===点击新建数据==");
+      console.log(newProdctData.value);
+      const imageList = [] as any[];
+      const { photoList, ...rest } = newProdctData.value;
+      console.log("==rest数据==");
+      console.log(rest);
+      console.log(photoList);
+      photoList?.map(item => {
+        if (item.response.code == 200) {
+          imageList.push(JSON.stringify(item));
+        }
+      });
       addPd({
-        categoryId: "" + newProdctData.value.categoryId,
-        managementLevelId: "" + newProdctData.value.managementLevelId,
-        productName: "" + newProdctData.value.productName,
-        specification: "" + newProdctData.value.specification,
-        supplyAllYea: "" + newProdctData.value.supplyAllYea
+        ...rest,
+        photoList: imageList
       })
         .then(res => {
           const { code, data, msg } = res;
@@ -177,12 +191,18 @@ const newProdctData = ref({
   // 单位 buchuan
   // 常年正常供应
   supplyAllYea: "",
-  unit: "公斤"
+  unit: "公斤",
+  enName: "",
+  referenceCost: "",
+  harvestSeason: "",
+  photoList: []
 });
 
 const activeCateData = ref({});
 const dialogUpdateVisible = ref(false);
 const dialogDeleteVisible = ref(false);
+const dialogImageUrl = ref("");
+const dialogVisible = ref(false);
 
 // 更新分类接口
 const updateCateData = async val => {
@@ -191,6 +211,8 @@ const updateCateData = async val => {
   await pdUpdateRef.value.validate((valid, fields) => {
     if (valid) {
       console.log("submit!");
+      console.log("===表单信息数据==");
+      console.log(activeCateData);
       updatePd({
         categoryId: "" + activeCateData.value.categoryId,
         managementLevelId: "" + activeCateData.value.managementLevelId,
@@ -277,6 +299,16 @@ const addClass = ({ row }) => {
   }
 };
 
+const handlePictureCardPreview = uploadFile => {
+  dialogImageUrl.value = uploadFile.url!;
+  dialogVisible.value = true;
+};
+
+const handleFileChange = (file, files) => {
+  console.log("file,files", file, files);
+};
+
+const uploadUrl = baseUrlApi("/supplier/upload");
 const pdNewRef = ref(null);
 const pdUpdateRef = ref(null);
 const pdRules = {
@@ -288,7 +320,9 @@ const pdRules = {
   specification: [{ required: true, message: "请输入规格", trigger: "blur" }],
   supplyAllYea: [
     { required: true, message: "请输入常年正常供应", trigger: "blur" }
-  ]
+  ],
+  enName: [{ required: true, message: "请输入英文名", trigger: "blur" }],
+  referenceCost: [{ required: true, message: "请输入价格", trigger: "blur" }]
 };
 </script>
 
@@ -442,6 +476,63 @@ const pdRules = {
             autocomplete="off"
           />
         </el-form-item>
+        <el-form-item
+          prop="enName"
+          label="英文名"
+          :label-width="formLabelWidth"
+        >
+          <el-input
+            type="text"
+            v-model="newProdctData.enName"
+            autocomplete="off"
+          />
+        </el-form-item>
+        <el-form-item
+          prop="referenceCost"
+          label="价格"
+          :label-width="formLabelWidth"
+        >
+          <el-input
+            type="text"
+            v-model="newProdctData.referenceCost"
+            autocomplete="off"
+          />
+        </el-form-item>
+        <el-form-item
+          prop="photoList"
+          label="照片"
+          :label-width="formLabelWidth"
+        >
+          <el-upload
+            v-model:file-list="newProdctData.photoList"
+            class="upload-demo"
+            :on-preview="handlePictureCardPreview"
+            :on-change="handleFileChange"
+            :action="uploadUrl"
+            :accept="'*'"
+            :auto-upload="true"
+            list-type="text"
+            :headers="{
+              Authorization: formatToken(getToken().accessToken)
+            }"
+          >
+            <el-button>上传照片</el-button>
+          </el-upload>
+        </el-form-item>
+        <el-form-item
+          prop="harvestSeason"
+          label="收获季节"
+          :label-width="formLabelWidth"
+        >
+          <el-select
+            class="dddd"
+            v-model="newProdctData.harvestSeason"
+            placeholder="选择收获季节"
+          >
+            <el-option v-for="item in 12" :label="item" :value="item" />
+          </el-select>
+          <span>月份</span>
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -526,6 +617,63 @@ const pdRules = {
             autocomplete="off"
           />
         </el-form-item>
+        <el-form-item
+          label="英文名"
+          prop="enName"
+          :label-width="formLabelWidth"
+        >
+          <el-input
+            type="text"
+            v-model="activeCateData.enName"
+            autocomplete="off"
+          />
+        </el-form-item>
+        <el-form-item
+          prop="referenceCost"
+          label="价格"
+          :label-width="formLabelWidth"
+        >
+          <el-input
+            type="text"
+            v-model="activeCateData.referenceCost"
+            autocomplete="off"
+          />
+        </el-form-item>
+        <el-form-item
+          prop="photoList"
+          label="照片"
+          :label-width="formLabelWidth"
+        >
+          <el-upload
+            v-model:file-list="activeCateData.photoList"
+            class="upload-demo"
+            :on-preview="handlePictureCardPreview"
+            :on-change="handleFileChange"
+            :action="uploadUrl"
+            :accept="'*'"
+            :auto-upload="true"
+            list-type="text"
+            :headers="{
+              Authorization: formatToken(getToken().accessToken)
+            }"
+          >
+            <el-button>上传照片</el-button>
+          </el-upload>
+        </el-form-item>
+        <el-form-item
+          prop="harvestSeason"
+          label="收获季节"
+          :label-width="formLabelWidth"
+        >
+          <el-select
+            class="dddd"
+            v-model="activeCateData.harvestSeason"
+            placeholder="选择管理等级分类"
+          >
+            <el-option v-for="item in 12" :label="item" :value="item" />
+          </el-select>
+          <span>月份</span>
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -549,6 +697,9 @@ const pdRules = {
           </el-button>
         </div>
       </template>
+    </el-dialog>
+    <el-dialog v-model="dialogVisible">
+      <img w-full :src="dialogImageUrl" alt="Preview Image" />
     </el-dialog>
   </div>
 </template>
