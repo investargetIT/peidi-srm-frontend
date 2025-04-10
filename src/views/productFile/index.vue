@@ -365,7 +365,7 @@ const pdRules = {
           }
         "
       />
-      <el-table-column prop="referenceCost" label="参考成本" />
+      <el-table-column prop="referenceCost" label="价格" />
       <el-table-column prop="lastQuoteDate" label="最近一次报价时间" />
       <el-table-column prop="supplyAllYea" label="常年正常供应" />
       <el-table-column prop="supplierName" label="品牌" />
