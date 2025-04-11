@@ -201,7 +201,7 @@ const rules = ref({
         clearNewCateData();
       "
     >
-      添加分类
+      添加主分类
     </el-button>
     <el-table :data="currentPage" style="width: 90%">
       <el-table-column fixed prop="categoryName" label="主分类" width="250" />
