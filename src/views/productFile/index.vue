@@ -7,11 +7,12 @@ import {
   updatePd,
   deletePd,
   getPagePd,
-  getFileDownLoadPath
+  getFileDownLoadPath,
+  getUserDataSourceApi
 } from "@/api/user";
 import { ref, watch, ToRefs, toRefs } from "vue";
 import { message } from "@/utils/message";
-import { debounce } from "@pureadmin/utils";
+import { debounce, storageLocal } from "@pureadmin/utils";
 import { getUserDataSource, formatToken, getToken } from "@/utils/auth.ts";
 defineOptions({
   name: "Welcome"
@@ -22,6 +23,12 @@ const allCateData = ref([]);
 const currentPage = ref([]);
 
 const enums = ref([]);
+const curUserId = ref("");
+
+const getUserId = () => {
+  const tempId = storageLocal().getItem("dataSource")?.id || null;
+  curUserId.value = tempId;
+};
 const getEnums = () => {
   getEnum({
     type: "management_level"
@@ -93,7 +100,12 @@ const getCurrentPage = () => {
     console.log("res", res);
     if (res?.code) {
       currentPage.value = res?.data?.records || [];
-      currentPage.value = res?.data?.records || [];
+      currentPage.value =
+        res?.data?.records?.map(item => {
+          item.curUserId = curUserId.value;
+          return item;
+        }) || [];
+      console.log("===返回数据===", res?.data?.records);
       total.value = res?.data?.total;
     }
   });
@@ -102,6 +114,7 @@ const getCurrentPage = () => {
 getAllCateFun();
 getCurrentPage();
 getEnums();
+getUserId();
 
 // 清除新增分类信息
 const clearnewProdctData = () => {
@@ -389,7 +402,7 @@ const pdRules = {
     </el-button>
     <el-table :data="currentPage" :row-class-name="addClass" style="width: 90%">
       <el-table-column fixed prop="materialCode" label="料号" />
-      <el-table-column fixed prop="userId" label="信息维护人" />
+      <el-table-column fixed prop="curUserId" label="信息维护人" />
       <el-table-column prop="categoryName" label="主分类" />
       <el-table-column prop="managementLevelName" label="管理等级" />
       <el-table-column prop="productName" label="品名" />
