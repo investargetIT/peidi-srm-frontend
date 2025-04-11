@@ -209,13 +209,16 @@ const updateCateData = async val => {
       console.log("submit!");
       console.log("===表单信息数据==");
       console.log(activeCateData);
+      const imageList = [] as any[];
+      const { photoList, ...rest } = activeCateData.value;
+      photoList?.map(item => {
+        if (item.response.code == 200) {
+          imageList.push(JSON.stringify(item));
+        }
+      });
       updatePd({
-        categoryId: "" + activeCateData.value.categoryId,
-        managementLevelId: "" + activeCateData.value.managementLevelId,
-        productName: "" + activeCateData.value.productName,
-        specification: "" + activeCateData.value.specification,
-        supplyAllYea: "" + activeCateData.value.supplyAllYea,
-        id: activeCateData.value.id
+        ...rest,
+        photoList: imageList
       })
         .then(res => {
           const { code, data, msg } = res;
