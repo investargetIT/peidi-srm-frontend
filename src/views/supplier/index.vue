@@ -91,11 +91,11 @@ const getCurrentPage = () => {
       searchValue: searchInfo.value.supplierPerson
     });
   }
-  searchStr.push({
-    searchName: "dataSource",
-    searchType: "equals",
-    searchValue: getUserDataSource()
-  });
+  // searchStr.push({
+  //   searchName: "dataSource",
+  //   searchType: "equals",
+  //   searchValue: getUserDataSource()
+  // });
   getPageSupplier({
     pageNo: Number(currentPageNum.value),
     pageSize: Number(pageSize.value),

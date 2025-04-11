@@ -6,7 +6,8 @@ import {
   addPd,
   updatePd,
   deletePd,
-  getPagePd
+  getPagePd,
+  getFileDownLoadPath
 } from "@/api/user";
 import { ref, watch, ToRefs, toRefs } from "vue";
 import { message } from "@/utils/message";
@@ -138,13 +139,8 @@ const addCateData = async () => {
   if (!pdNewRef.value) return;
   await pdNewRef.value.validate((valid, fields) => {
     if (valid) {
-      console.log("===点击新建数据==");
-      console.log(newProdctData.value);
       const imageList = [] as any[];
       const { photoList, ...rest } = newProdctData.value;
-      console.log("==rest数据==");
-      console.log(rest);
-      console.log(photoList);
       photoList?.map(item => {
         if (item.response.code == 200) {
           imageList.push(JSON.stringify(item));
@@ -194,7 +190,7 @@ const newProdctData = ref({
   unit: "公斤",
   enName: "",
   referenceCost: "",
-  harvestSeason: "",
+  harvestSeason: null,
   photoList: []
 });
 
@@ -242,7 +238,10 @@ const updateCateData = async val => {
 
 // 打开更新弹窗
 const openUpdatePop = val => {
-  activeCateData.value = JSON.parse(JSON.stringify(val.row));
+  const { photoList, ...rest } = val.row;
+  activeCateData.value = JSON.parse(
+    JSON.stringify({ ...rest, photoList: getPhotoListData(photoList) })
+  );
   dialogUpdateVisible.value = true;
   setTimeout(() => {
     // console.log('document.querySelector()',document.querySelector('.ssss')?.querySelector('.el-select__placeholder')?.children[0].innerText = activeCateData.value.categoryName);
@@ -255,6 +254,14 @@ const openUpdatePop = val => {
       .querySelector(".el-select__placeholder").children[0].innerText =
       activeCateData.value.managementLevelName;
   }, 100);
+};
+
+const getPhotoListData = listData => {
+  if (!listData?.length) return [];
+  return listData.map(item => {
+    const tempData = JSON.parse(item);
+    return tempData;
+  });
 };
 
 // 删除弹窗打开
@@ -300,8 +307,22 @@ const addClass = ({ row }) => {
 };
 
 const handlePictureCardPreview = uploadFile => {
-  dialogImageUrl.value = uploadFile.url!;
-  dialogVisible.value = true;
+  if (uploadFile.response?.code !== 200) return;
+  getFileDownLoadPath({
+    objectName: uploadFile.response.data
+  })
+    .then(res => {
+      const { code, msg, data } = res;
+      if (code === 200) {
+        dialogImageUrl.value = res.data;
+        dialogVisible.value = true;
+      } else {
+        message("图片预览失败--" + msg, { type: "error" });
+      }
+    })
+    .catch(err => {
+      message("图片预览失败", { type: "error" });
+    });
 };
 
 const handleFileChange = (file, files) => {
@@ -322,7 +343,19 @@ const pdRules = {
     { required: true, message: "请输入常年正常供应", trigger: "blur" }
   ],
   enName: [{ required: true, message: "请输入英文名", trigger: "blur" }],
-  referenceCost: [{ required: true, message: "请输入价格", trigger: "blur" }]
+  referenceCost: [
+    { required: true, message: "请输入价格", trigger: "blur" },
+    {
+      validator: (rule, value, callback) => {
+        if (value <= 0) {
+          callback(new Error("必须大于0"));
+        } else {
+          callback();
+        }
+      },
+      trigger: "change"
+    }
+  ]
 };
 </script>
 
@@ -529,6 +562,7 @@ const pdRules = {
             class="dddd"
             v-model="newProdctData.harvestSeason"
             placeholder="选择收获季节"
+            style="width: 80%"
           >
             <el-option v-for="item in 12" :label="item" :value="item" />
           </el-select>
@@ -669,7 +703,8 @@ const pdRules = {
           <el-select
             class="dddd"
             v-model="activeCateData.harvestSeason"
-            placeholder="选择管理等级分类"
+            placeholder="选择收获季节"
+            style="width: 80%"
           >
             <el-option v-for="item in 12" :label="item" :value="item" />
           </el-select>

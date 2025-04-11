@@ -208,14 +208,14 @@ export const deleteQuota = data => {
 export const getPageQuota = params => {
   return http.request("get", baseUrlApi("/quotation/page"), {
     params: {
-      ...params,
-      searchStr: JSON.stringify([
-        {
-          searchName: "dataSource",
-          searchType: "equals",
-          searchValue: getUserDataSource()
-        }
-      ])
+      ...params
+      // searchStr: JSON.stringify([
+      //   {
+      //     searchName: "dataSource",
+      //     searchType: "equals",
+      //     searchValue: getUserDataSource()
+      //   }
+      // ])
     }
   });
 };
@@ -264,6 +264,12 @@ export const getAllSup = params => {
 // 获取所有供应商
 export const downLoadFile = params => {
   return http.request("get", baseUrlApi("/common/download"), {
+    params
+  });
+};
+// 获取文件下载链接
+export const getFileDownLoadPath = params => {
+  return http.request("get", baseUrlApi("/common/download-url"), {
     params
   });
 };
