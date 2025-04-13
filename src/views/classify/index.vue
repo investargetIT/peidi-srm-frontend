@@ -45,6 +45,9 @@ const rules = ref({
   ],
   categoryCode: [
     { required: true, message: "Please input code", trigger: "blur" }
+  ],
+  parentId: [
+    { required: true, message: "Please input parentId", trigger: "blur" }
   ]
 });
 
@@ -413,13 +416,21 @@ watch([currentPageNum, pageSize], () => {
     >
       <el-form :model="activeCateData" :rules="rules" ref="subFormRef">
         <template v-if="curLevel === 1">
-          <el-form-item label="主分类" :label-width="formLabelWidth">
+          <el-form-item
+            prop="categoryName"
+            label="主分类"
+            :label-width="formLabelWidth"
+          >
             <el-input
               v-model="activeCateData.categoryName"
               autocomplete="off"
             />
           </el-form-item>
-          <el-form-item label="主分类编码" :label-width="formLabelWidth">
+          <el-form-item
+            prop="categoryCode"
+            label="主分类编码"
+            :label-width="formLabelWidth"
+          >
             <el-input
               type="text"
               v-model="activeCateData.categoryCode"
@@ -441,13 +452,21 @@ watch([currentPageNum, pageSize], () => {
               />
             </el-select>
           </el-form-item>
-          <el-form-item label="子分类名称" :label-width="formLabelWidth">
+          <el-form-item
+            label="子分类名称"
+            prop="categoryName"
+            :label-width="formLabelWidth"
+          >
             <el-input
               v-model="activeCateData.categoryName"
               autocomplete="off"
             />
           </el-form-item>
-          <el-form-item label="子分类编码" :label-width="formLabelWidth">
+          <el-form-item
+            label="子分类编码"
+            prop="categoryCode"
+            :label-width="formLabelWidth"
+          >
             <el-input
               type="text"
               v-model="activeCateData.categoryCode"
