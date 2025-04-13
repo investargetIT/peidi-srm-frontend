@@ -7,22 +7,91 @@ import {
   updatePd,
   deletePd,
   getPagePd,
-  getFileDownLoadPath,
-  getUserDataSourceApi
+  getFileDownLoadPath
 } from "@/api/user";
-import { ref, watch, ToRefs, toRefs } from "vue";
+import { ref, watch, computed, watchEffect } from "vue";
 import { message } from "@/utils/message";
 import { debounce, storageLocal } from "@pureadmin/utils";
-import { getUserDataSource, formatToken, getToken } from "@/utils/auth.ts";
+import { formatToken, getToken } from "@/utils/auth.ts";
 defineOptions({
   name: "Welcome"
 });
 
 const allCateData = ref([]);
-
+const subCategoryList = ref([]);
 const currentPage = ref([]);
-
 const enums = ref([]);
+const pageSizeArr = ref([5, 10, 15, 20]);
+const pageSize = ref(pageSizeArr.value[3]);
+const total = ref(0);
+const uploadUrl = baseUrlApi("/supplier/upload");
+const pdNewRef = ref(null);
+const pdUpdateRef = ref(null);
+const pdRules = {
+  categoryId: [{ required: true, message: "请选择主分类", trigger: "change" }],
+  subCategoryId: [
+    { required: true, message: "请选择子分类", trigger: "change" }
+  ],
+  managementLevelId: [
+    { required: true, message: "请选择管理等级分类", trigger: "change" }
+  ],
+  productName: [{ required: true, message: "请输入品名", trigger: "blur" }],
+  specification: [{ required: true, message: "请输入规格", trigger: "blur" }],
+  supplyAllYea: [
+    { required: true, message: "请输入常年正常供应", trigger: "blur" }
+  ],
+  enName: [{ required: true, message: "请输入英文名", trigger: "blur" }],
+  referenceCost: [
+    { required: true, message: "请输入价格", trigger: "blur" },
+    {
+      validator: (rule, value, callback) => {
+        if (value <= 0) {
+          callback(new Error("必须大于0"));
+        } else {
+          callback();
+        }
+      },
+      trigger: "change"
+    }
+  ]
+};
+const currentPageNum = ref(1);
+const searchInfo = ref({
+  categoryName: "",
+  productName: ""
+});
+
+const dialogFormVisible = ref(false);
+const formLabelWidth = "140px";
+const newProdctData = ref({
+  // 主分类id
+  categoryId: "",
+  // 子分类id
+  subCategoryId: "",
+  // "categoryName": "",
+  // 管理等级
+  managementLevelId: "",
+  // "managementLevelName": "",
+
+  // 品名
+  productName: "",
+  // 规格
+  specification: "",
+  // 单位 buchuan
+  // 常年正常供应
+  supplyAllYea: "",
+  unit: "公斤",
+  enName: "",
+  referenceCost: "",
+  harvestSeason: null,
+  photoList: []
+});
+
+const activeCateData = ref({});
+const dialogUpdateVisible = ref(false);
+const dialogDeleteVisible = ref(false);
+const dialogImageUrl = ref("");
+const dialogVisible = ref(false);
 
 const getEnums = () => {
   getEnum({
@@ -43,22 +112,14 @@ const getAllCateFun = () => {
   getAllCate({}).then(res => {
     console.log("res", res);
     if (res?.code) {
-      allCateData.value = res?.data || [];
+      allCateData.value = buildTree(res?.data || []);
     }
   });
 };
-const pageSizeArr = ref([5, 10, 15, 20]);
-const pageSize = ref(pageSizeArr.value[3]);
-const total = ref(0);
 
 const handleSizeChange = (val: number) => {
   pageSize.value = val;
 };
-const currentPageNum = ref(1);
-const searchInfo = ref({
-  categoryName: "",
-  productName: ""
-});
 
 // searchInfo变动时重新获取数据，但是不能调用搜索太频繁了
 watch(
@@ -70,6 +131,7 @@ watch(
   },
   { deep: true }
 );
+
 const getCurrentPage = () => {
   const searchStr: any = [];
   if (searchInfo.value.categoryName) {
@@ -109,6 +171,8 @@ const clearnewProdctData = () => {
   newProdctData.value = {
     // 主分类id
     categoryId: "",
+    // 子分类id
+    subCategoryId: "",
     // 管理等级
     // "categoryName": "",
 
@@ -171,35 +235,31 @@ const addCateData = async () => {
   });
 };
 
-const dialogFormVisible = ref(false);
-const formLabelWidth = "140px";
-const newProdctData = ref({
-  // 主分类id
-  categoryId: "",
-  // "categoryName": "",
-  // 管理等级
-  managementLevelId: "",
-  // "managementLevelName": "",
+const buildTree = data => {
+  const map = new Map();
+  const roots = [];
 
-  // 品名
-  productName: "",
-  // 规格
-  specification: "",
-  // 单位 buchuan
-  // 常年正常供应
-  supplyAllYea: "",
-  unit: "公斤",
-  enName: "",
-  referenceCost: "",
-  harvestSeason: null,
-  photoList: []
-});
+  // 遍历所有节点，存储并初始化children
+  data.forEach(node => {
+    node.children = [];
+    map.set(node.id, node);
+    if (node.level === 1) {
+      roots.push(node);
+    }
+  });
 
-const activeCateData = ref({});
-const dialogUpdateVisible = ref(false);
-const dialogDeleteVisible = ref(false);
-const dialogImageUrl = ref("");
-const dialogVisible = ref(false);
+  // 将子节点添加到父节点的children中
+  data.forEach(node => {
+    if (node.level === 2 && node.parentId !== null) {
+      const parent = map.get(node.parentId);
+      if (parent) {
+        parent.children.push(node);
+      }
+    }
+  });
+
+  return roots;
+};
 
 // 更新分类接口
 const updateCateData = async val => {
@@ -333,33 +393,11 @@ const handleFileChange = (file, files) => {
   console.log("file,files", file, files);
 };
 
-const uploadUrl = baseUrlApi("/supplier/upload");
-const pdNewRef = ref(null);
-const pdUpdateRef = ref(null);
-const pdRules = {
-  categoryId: [{ required: true, message: "请选择主分类", trigger: "change" }],
-  managementLevelId: [
-    { required: true, message: "请选择管理等级分类", trigger: "change" }
-  ],
-  productName: [{ required: true, message: "请输入品名", trigger: "blur" }],
-  specification: [{ required: true, message: "请输入规格", trigger: "blur" }],
-  supplyAllYea: [
-    { required: true, message: "请输入常年正常供应", trigger: "blur" }
-  ],
-  enName: [{ required: true, message: "请输入英文名", trigger: "blur" }],
-  referenceCost: [
-    { required: true, message: "请输入价格", trigger: "blur" },
-    {
-      validator: (rule, value, callback) => {
-        if (value <= 0) {
-          callback(new Error("必须大于0"));
-        } else {
-          callback();
-        }
-      },
-      trigger: "change"
-    }
-  ]
+const handleCategoryChange = val => {
+  console.log("val", val);
+  subCategoryList.value =
+    allCateData.value.find(item => item.id === val)?.children || [];
+  newProdctData.value.subCategoryId = "";
 };
 </script>
 
@@ -439,7 +477,12 @@ const pdRules = {
       layout="total, sizes, prev, pager, next, jumper"
       :total="total"
     />
-    <el-dialog v-model="dialogFormVisible" title="添加新产品" width="500">
+    <el-dialog
+      v-model="dialogFormVisible"
+      title="添加新产品"
+      width="500"
+      destroy-on-close
+    >
       <el-form ref="pdNewRef" :rules="pdRules" :model="newProdctData">
         <el-form-item
           prop="categoryId"
@@ -449,9 +492,27 @@ const pdRules = {
           <el-select
             v-model="newProdctData.categoryId"
             placeholder="选择主分类"
+            @change="handleCategoryChange"
           >
             <el-option
               v-for="item in allCateData"
+              :label="item.categoryName"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item
+          prop="subCategoryId"
+          label="子分类"
+          :label-width="formLabelWidth"
+        >
+          <el-select
+            v-model="newProdctData.subCategoryId"
+            placeholder="选择子分类"
+            :disabled="!newProdctData.categoryId"
+          >
+            <el-option
+              v-for="item in subCategoryList"
               :label="item.categoryName"
               :value="item.id"
             />
@@ -579,7 +640,12 @@ const pdRules = {
         </div>
       </template>
     </el-dialog>
-    <el-dialog v-model="dialogUpdateVisible" title="编辑产品" width="500">
+    <el-dialog
+      v-model="dialogUpdateVisible"
+      title="编辑产品"
+      width="500"
+      destroy-on-close
+    >
       <el-form ref="pdUpdateRef" :rules="pdRules" :model="activeCateData">
         <el-form-item
           label="主分类"
@@ -590,6 +656,22 @@ const pdRules = {
             class="ssss"
             v-model="activeCateData.categoryId"
             :placeholder="activeCateData.categoryName"
+          >
+            <el-option
+              v-for="item in allCateData"
+              :label="item.categoryName"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item
+          prop="subCategoryId"
+          label="子分类"
+          :label-width="formLabelWidth"
+        >
+          <el-select
+            v-model="activeCateData.subCategoryId"
+            placeholder="选择子分类"
           >
             <el-option
               v-for="item in allCateData"

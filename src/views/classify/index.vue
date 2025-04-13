@@ -13,24 +13,51 @@ defineOptions({
   name: "Welcome"
 });
 
-const tableData = ref([]);
-
-const currentPage = ref([]);
+const categoryList = ref([]);
+const currentPage = ref<any[]>([]);
 const pageSizeArr = ref([5, 10, 15, 20]);
 const pageSize = ref(pageSizeArr.value[3]);
+const curLevel = ref(1);
+const dialogFormVisible = ref(false);
+const formLabelWidth = "140px";
+const newCateData = ref({
+  categoryName: "",
+  categoryCode: "",
+  parentName: "",
+  parentId: "",
+  date1: "",
+  date2: "",
+  delivery: false,
+  type: [],
+  resource: "",
+  desc: ""
+});
+const currentPageNum = ref(1);
+const total = ref(0);
+const activeCateData = ref({});
+const dialogUpdateVisible = ref(false);
+const dialogDeleteVisible = ref(false);
+const formRef = ref(null);
+const rules = ref({
+  categoryName: [
+    { required: true, message: "Please input name", trigger: "blur" }
+  ],
+  categoryCode: [
+    { required: true, message: "Please input code", trigger: "blur" }
+  ]
+});
 
 const handleSizeChange = (val: number) => {
   pageSize.value = val;
 };
-const currentPageNum = ref(1);
 
-const getAllCateFun = () => {
-  getAllCate({}).then(res => {
-    console.log("res", res);
-    if (res?.code) {
-      tableData.value = res?.data || [];
-    }
-  });
+const fetchTableData = async () => {
+  const listRes = await getAllCate({});
+  if (listRes?.code) {
+    const tempList = listRes?.data || [];
+    categoryList.value = tempList?.filter(item => item.level === 1) || [];
+    getCurrentPage();
+  }
 };
 
 const getCurrentPage = () => {
@@ -38,20 +65,21 @@ const getCurrentPage = () => {
     pageNo: Number(currentPageNum.value),
     pageSize: Number(pageSize.value)
   }).then(res => {
-    console.log("res", res);
     if (res?.code) {
-      currentPage.value = res?.data?.records || [];
+      const tempArr = buildTree(res?.data?.records || []);
+      currentPage.value = tempArr;
+      total.value = res?.data?.total;
     }
   });
 };
 
-getAllCateFun();
-getCurrentPage();
+fetchTableData();
 
 // 清除新增分类信息
 const clearNewCateData = () => {
-  newCateData.value.name = "";
-  newCateData.value.code = "";
+  newCateData.value.categoryName = "";
+  newCateData.value.categoryCode = "";
+  newCateData.value.parentId = "";
 };
 
 const addCateData = async () => {
@@ -59,17 +87,24 @@ const addCateData = async () => {
   await formRef.value.validate((valid, fields) => {
     if (valid) {
       console.log("submit!");
-      addCate({
-        categoryCode: "" + newCateData.value.code,
-        categoryName: "" + newCateData.value.name
-      })
+      const sendConfig = {
+        ...newCateData.value,
+        level: curLevel.value
+      };
+      if (curLevel.value === 2) {
+        sendConfig.parentName = categoryList?.find(
+          item => item.id === newCateData.value.parentCode
+        )?.categoryName;
+        sendConfig.parentId = newCateData.value.parentId;
+      }
+      addCate(sendConfig)
         .then(res => {
           const { code, data, msg } = res;
           if (res.code == 200) {
             message("添加分类成功", { type: "success" });
             dialogFormVisible.value = false;
             clearNewCateData();
-            getAllCateFun();
+            fetchTableData();
           } else {
             message("添加分类失败--" + msg, { type: "error" });
           }
@@ -83,27 +118,8 @@ const addCateData = async () => {
   });
 };
 
-const dialogFormVisible = ref(false);
-const formLabelWidth = "140px";
-const newCateData = ref({
-  name: "",
-  code: "",
-  date1: "",
-  date2: "",
-  delivery: false,
-  type: [],
-  resource: "",
-  desc: ""
-});
-
-const activeCateData = ref({});
-const dialogUpdateVisible = ref(false);
-const dialogDeleteVisible = ref(false);
-
 // 更新分类接口
 const updateCateData = val => {
-  console.log("activeCateData", activeCateData.value);
-
   if (
     !activeCateData.value.categoryCode ||
     !activeCateData.value.categoryName ||
@@ -111,18 +127,25 @@ const updateCateData = val => {
   ) {
     return;
   }
-  updateCate({
+  const sendConfig = {
     categoryCode: "" + activeCateData.value.categoryCode,
     categoryName: "" + activeCateData.value.categoryName,
-    id: activeCateData.value.id
-  })
+    id: activeCateData.value.id,
+    level: curLevel.value
+  };
+  if (curLevel.value === 2) {
+    sendConfig.parentName = categoryList?.find(
+      item => item.id === activeCateData.value.parentId
+    )?.categoryName;
+    sendConfig.parentId = activeCateData.value.parentId;
+  }
+  updateCate(sendConfig)
     .then(res => {
       const { code, data, msg } = res;
       if (res.code == 200) {
         message("更新分类成功", { type: "success" });
         dialogUpdateVisible.value = false;
-        getAllCateFun();
-        getCurrentPage();
+        fetchTableData();
       } else {
         message("更新分类失败--" + msg, { type: "error" });
       }
@@ -132,16 +155,69 @@ const updateCateData = val => {
     });
 };
 
+const buildTree = (data: any[]) => {
+  const map = new Map<number, any>(); // 节点映射表，用于快速查找父节点
+  const roots: any[] = []; // 最终的树形结构根节点列表
+
+  // 深拷贝数据，避免污染原始数据
+  const copiedData = JSON.parse(JSON.stringify(data));
+  const copiedCategoryList = JSON.parse(JSON.stringify(categoryList.value));
+
+  // 处理 data 中的一级节点（直接作为根节点）
+  copiedData.forEach((node: any) => {
+    node.children = []; // 初始化子节点列表
+    if (node.level === 1) {
+      map.set(node.id, node);
+      roots.push(node); // 加入根节点列表
+    }
+  });
+
+  // 处理 data 中的二级节点（挂载到父节点）
+  copiedData.forEach((node: any) => {
+    if (node.level === 2) {
+      // 优先从 data 中查找父节点
+      let parent = map.get(node.parentId);
+      if (!parent) {
+        // 从 categoryList 中查找父节点
+        const categoryParent = copiedCategoryList.find(
+          (c: any) => c.id === node.parentId
+        );
+        if (categoryParent) {
+          // 若父节点未加入 map，则初始化并加入根节点
+          if (!map.has(categoryParent.id)) {
+            const clonedParent = { ...categoryParent, children: [] };
+            map.set(clonedParent.id, clonedParent);
+            roots.push(clonedParent);
+          }
+          parent = map.get(categoryParent.id);
+        }
+      }
+      // 挂载到父节点（若存在）
+      parent?.children.push(node);
+    }
+  });
+
+  return roots;
+};
+
 // 打开更新弹窗
 const openUpdatePop = val => {
-  activeCateData.value = JSON.parse(JSON.stringify(val.row));
+  const tempData = JSON.parse(JSON.stringify(val.row));
+  activeCateData.value = tempData;
+  if (tempData.level === 2) {
+    activeCateData.value.parentId = categoryList.value.find(
+      item => item.id === tempData.parentId
+    )?.id;
+  }
   dialogUpdateVisible.value = true;
+  curLevel.value = val.row.level;
 };
 
 // 删除弹窗打开
 const deletePop = val => {
   activeCateData.value = JSON.parse(JSON.stringify(val.row));
   dialogDeleteVisible.value = true;
+  curLevel.value = val.row.level;
 };
 
 // 删除分类的方法
@@ -153,18 +229,21 @@ const deleteCateFun = () => {
   ) {
     return;
   }
-  deleteCate({
+  const sendConfig = {
     categoryCode: "" + activeCateData.value.categoryCode,
     categoryName: "" + activeCateData.value.categoryName,
     id: activeCateData.value.id
-  })
+  };
+  if (curLevel.value === 2) {
+    sendConfig.parentId = activeCateData.value.parentId;
+  }
+  deleteCate(sendConfig)
     .then(res => {
       const { code, data, msg } = res;
       if (res.code == 200) {
         message("删除分类成功", { type: "success" });
         dialogUpdateVisible.value = false;
-        getAllCateFun();
-        getCurrentPage();
+        fetchTableData();
       } else {
         message("删除分类失败--" + msg, { type: "error" });
       }
@@ -174,6 +253,12 @@ const deleteCateFun = () => {
     });
 };
 
+const addChildCate = val => {
+  dialogFormVisible.value = true;
+  curLevel.value = 2;
+  newCateData.value = { parentId: val.row.id };
+};
+
 const changeCurrentPage = val => {
   console.log("val", val);
 };
@@ -181,12 +266,6 @@ const changeCurrentPage = val => {
 watch([currentPageNum, pageSize], () => {
   console.log("currentPageNum", currentPageNum.value);
   getCurrentPage();
-});
-
-const formRef = ref(null);
-const rules = ref({
-  name: [{ required: true, message: "Please input name", trigger: "blur" }],
-  code: [{ required: true, message: "Please input code", trigger: "blur" }]
 });
 </script>
 
@@ -198,12 +277,20 @@ const rules = ref({
       size="large"
       @click="
         dialogFormVisible = true;
+        curLevel = 1;
         clearNewCateData();
       "
     >
       添加主分类
     </el-button>
-    <el-table :data="currentPage" style="width: 90%">
+    <el-table
+      :data="currentPage"
+      style="width: 90%; margin-bottom: 20px"
+      border
+      default-expand-all
+      row-key="id"
+      :tree-props="{ children: 'children' }"
+    >
       <el-table-column fixed prop="categoryName" label="主分类" width="250" />
       <el-table-column prop="categoryCode" label="编码" width="220" />
       <el-table-column fixed="right" label="操作" min-width="120">
@@ -212,12 +299,24 @@ const rules = ref({
             link
             type="primary"
             size="large"
-            @click="openUpdatePop(scope)"
+            @click.stop="openUpdatePop(scope)"
           >
             更新
           </el-button>
-          <el-button link type="primary" @click="deletePop(scope)" size="large"
+          <el-button
+            link
+            type="primary"
+            @click.stop="deletePop(scope)"
+            size="large"
             >删除</el-button
+          >
+          <el-button
+            link
+            type="primary"
+            v-if="scope.row.level === 1"
+            @click="addChildCate(scope)"
+            size="large"
+            >添加子分类</el-button
           >
         </template>
       </el-table-column>
@@ -230,20 +329,73 @@ const rules = ref({
       :page-sizes="pageSizeArr"
       @size-change="handleSizeChange"
       layout="total, sizes, prev, pager, next, jumper"
-      :total="tableData.length"
+      :total="total"
     />
-    <el-dialog v-model="dialogFormVisible" title="添加新分类" width="500">
+    <el-dialog
+      v-model="dialogFormVisible"
+      :title="curLevel === 1 ? '添加主分类' : '添加子分类'"
+      width="500"
+    >
       <el-form :rules="rules" ref="formRef" :model="newCateData">
-        <el-form-item label="主分类" prop="name" :label-width="formLabelWidth">
-          <el-input v-model="newCateData.name" autocomplete="off" />
-        </el-form-item>
-        <el-form-item
-          label="主分类编码"
-          prop="code"
-          :label-width="formLabelWidth"
-        >
-          <el-input type="text" v-model="newCateData.code" autocomplete="off" />
-        </el-form-item>
+        <template v-if="curLevel === 1">
+          <el-form-item
+            label="主分类"
+            prop="categoryName"
+            :label-width="formLabelWidth"
+          >
+            <el-input v-model="newCateData.categoryName" autocomplete="off" />
+          </el-form-item>
+
+          <el-form-item
+            label="主分类编码"
+            prop="categoryCode"
+            :label-width="formLabelWidth"
+          >
+            <el-input
+              type="text"
+              v-model="newCateData.categoryCode"
+              autocomplete="off"
+            />
+          </el-form-item>
+        </template>
+
+        <template v-if="curLevel === 2">
+          <el-form-item
+            prop="parentId"
+            label="主分类"
+            :label-width="formLabelWidth"
+          >
+            <el-select
+              v-model="newCateData.parentId"
+              placeholder="选择主分类"
+              disabled
+            >
+              <el-option
+                v-for="item in categoryList"
+                :label="item.categoryName"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item
+            label="子分类名称"
+            prop="categoryName"
+            :label-width="formLabelWidth"
+          >
+            <el-input v-model="newCateData.categoryName" autocomplete="off" />
+          </el-form-item>
+          <el-form-item
+            label="子分类编码"
+            prop="categoryCode"
+            :label-width="formLabelWidth"
+          >
+            <el-input
+              type="text"
+              v-model="newCateData.categoryCode"
+              autocomplete="off"
+            />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -253,16 +405,49 @@ const rules = ref({
     </el-dialog>
     <el-dialog v-model="dialogUpdateVisible" title="编辑分类" width="500">
       <el-form :model="activeCateData">
-        <el-form-item label="主分类" :label-width="formLabelWidth">
-          <el-input v-model="activeCateData.categoryName" autocomplete="off" />
-        </el-form-item>
-        <el-form-item label="主分类编码" :label-width="formLabelWidth">
-          <el-input
-            type="text"
-            v-model="activeCateData.categoryCode"
-            autocomplete="off"
-          />
-        </el-form-item>
+        <template v-if="curLevel === 1">
+          <el-form-item label="主分类" :label-width="formLabelWidth">
+            <el-input
+              v-model="activeCateData.categoryName"
+              autocomplete="off"
+            />
+          </el-form-item>
+          <el-form-item label="主分类编码" :label-width="formLabelWidth">
+            <el-input
+              type="text"
+              v-model="activeCateData.categoryCode"
+              autocomplete="off"
+            />
+          </el-form-item>
+        </template>
+        <template v-if="curLevel === 2">
+          <el-form-item
+            label="主分类"
+            prop="categoryId"
+            :label-width="formLabelWidth"
+          >
+            <el-select class="ssss" v-model="activeCateData.parentId" disabled>
+              <el-option
+                v-for="item in categoryList"
+                :label="item.categoryName"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="子分类名称" :label-width="formLabelWidth">
+            <el-input
+              v-model="activeCateData.categoryName"
+              autocomplete="off"
+            />
+          </el-form-item>
+          <el-form-item label="子分类编码" :label-width="formLabelWidth">
+            <el-input
+              type="text"
+              v-model="activeCateData.categoryCode"
+              autocomplete="off"
+            />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
