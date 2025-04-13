@@ -38,6 +38,7 @@ const activeCateData = ref({});
 const dialogUpdateVisible = ref(false);
 const dialogDeleteVisible = ref(false);
 const formRef = ref(null);
+const subFormRef = ref(null);
 const rules = ref({
   categoryName: [
     { required: true, message: "Please input name", trigger: "blur" }
@@ -335,11 +336,12 @@ watch([currentPageNum, pageSize], () => {
       v-model="dialogFormVisible"
       :title="curLevel === 1 ? '添加主分类' : '添加子分类'"
       width="500"
+      destroy-on-close
     >
       <el-form :rules="rules" ref="formRef" :model="newCateData">
         <template v-if="curLevel === 1">
           <el-form-item
-            label="主分类"
+            label="主分类名称"
             prop="categoryName"
             :label-width="formLabelWidth"
           >
@@ -403,8 +405,13 @@ watch([currentPageNum, pageSize], () => {
         </div>
       </template>
     </el-dialog>
-    <el-dialog v-model="dialogUpdateVisible" title="编辑分类" width="500">
-      <el-form :model="activeCateData">
+    <el-dialog
+      v-model="dialogUpdateVisible"
+      :title="curLevel === 1 ? '编辑主分类' : '编辑子分类'"
+      width="500"
+      destroy-on-close
+    >
+      <el-form :model="activeCateData" :rules="rules" ref="subFormRef">
         <template v-if="curLevel === 1">
           <el-form-item label="主分类" :label-width="formLabelWidth">
             <el-input
@@ -423,7 +430,7 @@ watch([currentPageNum, pageSize], () => {
         <template v-if="curLevel === 2">
           <el-form-item
             label="主分类"
-            prop="categoryId"
+            prop="parentId"
             :label-width="formLabelWidth"
           >
             <el-select class="ssss" v-model="activeCateData.parentId" disabled>
