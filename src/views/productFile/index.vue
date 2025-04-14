@@ -28,10 +28,8 @@ const uploadUrl = baseUrlApi("/supplier/upload");
 const pdNewRef = ref(null);
 const pdUpdateRef = ref(null);
 const pdRules = {
-  categoryId: [{ required: true, message: "请选择主分类", trigger: "change" }],
-  subCategoryId: [
-    { required: true, message: "请选择子分类", trigger: "change" }
-  ],
+  parentId: [{ required: true, message: "请选择主分类", trigger: "change" }],
+  categoryId: [{ required: true, message: "请选择子分类", trigger: "change" }],
   managementLevelId: [
     { required: true, message: "请选择管理等级分类", trigger: "change" }
   ],
@@ -45,8 +43,10 @@ const pdRules = {
     { required: true, message: "请输入价格", trigger: "blur" },
     {
       validator: (rule, value, callback) => {
-        if (value <= 0) {
-          callback(new Error("必须大于0"));
+        const regex =
+          /^\+?(?!(?:0+(?:\.0+)?|\.0+$)(?:$|0+\.?0*$))(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+        if (!regex.test(value)) {
+          callback(new Error("价格必须大于0"));
         } else {
           callback();
         }
@@ -65,9 +65,9 @@ const dialogFormVisible = ref(false);
 const formLabelWidth = "140px";
 const newProdctData = ref({
   // 主分类id
-  categoryId: "",
+  parentId: "",
   // 子分类id
-  subCategoryId: "",
+  categoryId: "",
   // "categoryName": "",
   // 管理等级
   managementLevelId: "",
@@ -92,6 +92,7 @@ const dialogUpdateVisible = ref(false);
 const dialogDeleteVisible = ref(false);
 const dialogImageUrl = ref("");
 const dialogVisible = ref(false);
+const curUserId = storageLocal().getItem("dataSource")?.id || null;
 
 const getEnums = () => {
   getEnum({
@@ -132,6 +133,12 @@ watch(
   { deep: true }
 );
 
+watch(dialogFormVisible, newVal => {
+  if (newVal) {
+    subCategoryList.value = [];
+  }
+});
+
 const getCurrentPage = () => {
   const searchStr: any = [];
   if (searchInfo.value.categoryName) {
@@ -170,9 +177,9 @@ getEnums();
 const clearnewProdctData = () => {
   newProdctData.value = {
     // 主分类id
-    categoryId: "",
+    parentId: "",
     // 子分类id
-    subCategoryId: "",
+    categoryId: "",
     // 管理等级
     // "categoryName": "",
 
@@ -205,7 +212,7 @@ const addCateData = async () => {
   await pdNewRef.value.validate((valid, fields) => {
     if (valid) {
       const imageList = [] as any[];
-      const { photoList, ...rest } = newProdctData.value;
+      const { photoList, parentId, ...rest } = newProdctData.value;
       photoList?.map(item => {
         if (item.response.code == 200) {
           imageList.push(JSON.stringify(item));
@@ -213,7 +220,8 @@ const addCateData = async () => {
       });
       addPd({
         ...rest,
-        photoList: imageList
+        photoList: imageList,
+        userId: curUserId
       })
         .then(res => {
           const { code, data, msg } = res;
@@ -271,7 +279,7 @@ const updateCateData = async val => {
       console.log("===表单信息数据==");
       console.log(activeCateData);
       const imageList = [] as any[];
-      const { photoList, ...rest } = activeCateData.value;
+      const { photoList, parentId, ...rest } = activeCateData.value;
       photoList?.map(item => {
         if (item.response.code == 200) {
           imageList.push(JSON.stringify(item));
@@ -302,28 +310,43 @@ const updateCateData = async val => {
 
 // 打开更新弹窗
 const openUpdatePop = val => {
-  const { photoList, ...rest } = val.row;
+  console.log("===点击更新===");
+  console.log(val);
+  const {
+    photoList,
+    parentCategoryId,
+    categoryId,
+    managementLevelId,
+    ...rest
+  } = val.row;
   activeCateData.value = JSON.parse(
-    JSON.stringify({ ...rest, photoList: getPhotoListData(photoList) })
+    JSON.stringify({
+      ...rest,
+      parentId: parentCategoryId ? +parentCategoryId : null,
+      categoryId: categoryId ? +categoryId : null,
+      managementLevelId: managementLevelId ? +managementLevelId : null,
+      photoList: getPhotoListData(photoList)
+    })
   );
+  if (activeCateData.value.parentId) {
+    subCategoryList.value =
+      allCateData.value.find(item => item.id === activeCateData.value.parentId)
+        ?.children || [];
+  } else {
+    subCategoryList.value = [];
+  }
   dialogUpdateVisible.value = true;
-  setTimeout(() => {
-    // console.log('document.querySelector()',document.querySelector('.ssss')?.querySelector('.el-select__placeholder')?.children[0].innerText = activeCateData.value.categoryName);
-    document
-      .querySelector(".ssss")
-      .querySelector(".el-select__placeholder").children[0].innerText =
-      activeCateData.value.categoryName;
-    document
-      .querySelector(".dddd")
-      .querySelector(".el-select__placeholder").children[0].innerText =
-      activeCateData.value.managementLevelName;
-  }, 100);
 };
 
 const getPhotoListData = listData => {
   if (!listData?.length) return [];
   return listData.map(item => {
-    const tempData = JSON.parse(item);
+    let tempData;
+    try {
+      tempData = JSON.parse(item);
+    } catch {
+      tempData = item;
+    }
     return tempData;
   });
 };
@@ -394,10 +417,23 @@ const handleFileChange = (file, files) => {
 };
 
 const handleCategoryChange = val => {
-  console.log("val", val);
-  subCategoryList.value =
+  console.log("===主分类数据变更=");
+
+  const newSubCategories =
     allCateData.value.find(item => item.id === val)?.children || [];
-  newProdctData.value.subCategoryId = "";
+
+  subCategoryList.value = newSubCategories;
+  if (dialogFormVisible.value) {
+    newProdctData.value.categoryId = "";
+  } else if (dialogUpdateVisible.value) {
+    if (
+      !newSubCategories.some(
+        item => item.id === activeCateData.value.categoryId
+      )
+    ) {
+      activeCateData.value.categoryId = "";
+    }
+  }
 };
 </script>
 
@@ -429,7 +465,8 @@ const handleCategoryChange = val => {
     <el-table :data="currentPage" :row-class-name="addClass" style="width: 90%">
       <el-table-column fixed prop="materialCode" label="料号" />
       <el-table-column fixed prop="userInfo" label="信息维护人" />
-      <el-table-column prop="categoryName" label="主分类" />
+      <el-table-column prop="parentCategoryName" label="主分类" />
+      <el-table-column prop="categoryName" label="子分类" />
       <el-table-column prop="managementLevelName" label="管理等级" />
       <el-table-column prop="productName" label="品名" />
       <el-table-column prop="specification" label="规格" />
@@ -485,12 +522,12 @@ const handleCategoryChange = val => {
     >
       <el-form ref="pdNewRef" :rules="pdRules" :model="newProdctData">
         <el-form-item
-          prop="categoryId"
+          prop="parentId"
           label="主分类"
           :label-width="formLabelWidth"
         >
           <el-select
-            v-model="newProdctData.categoryId"
+            v-model="newProdctData.parentId"
             placeholder="选择主分类"
             @change="handleCategoryChange"
           >
@@ -502,14 +539,14 @@ const handleCategoryChange = val => {
           </el-select>
         </el-form-item>
         <el-form-item
-          prop="subCategoryId"
+          prop="categoryId"
           label="子分类"
           :label-width="formLabelWidth"
         >
           <el-select
-            v-model="newProdctData.subCategoryId"
+            v-model="newProdctData.categoryId"
             placeholder="选择子分类"
-            :disabled="!newProdctData.categoryId"
+            :disabled="!newProdctData.parentId"
           >
             <el-option
               v-for="item in subCategoryList"
@@ -649,13 +686,14 @@ const handleCategoryChange = val => {
       <el-form ref="pdUpdateRef" :rules="pdRules" :model="activeCateData">
         <el-form-item
           label="主分类"
-          prop="categoryId"
+          prop="parentId"
           :label-width="formLabelWidth"
         >
           <el-select
             class="ssss"
-            v-model="activeCateData.categoryId"
-            :placeholder="activeCateData.categoryName"
+            v-model="activeCateData.parentId"
+            placeholder="请选择主分类"
+            @change="handleCategoryChange"
           >
             <el-option
               v-for="item in allCateData"
@@ -665,16 +703,16 @@ const handleCategoryChange = val => {
           </el-select>
         </el-form-item>
         <el-form-item
-          prop="subCategoryId"
+          prop="categoryId"
           label="子分类"
           :label-width="formLabelWidth"
         >
           <el-select
-            v-model="activeCateData.subCategoryId"
+            v-model="activeCateData.categoryId"
             placeholder="选择子分类"
           >
             <el-option
-              v-for="item in allCateData"
+              v-for="item in subCategoryList"
               :label="item.categoryName"
               :value="item.id"
             />
