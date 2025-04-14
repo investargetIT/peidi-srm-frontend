@@ -376,12 +376,12 @@ const getYearListFun = () => {
         searchName: "year",
         searchType: "equals",
         searchValue: selectedYear.value
-      },
-      {
-        searchName: "dataSource",
-        searchType: "equals",
-        searchValue: getUserDataSource()
       }
+      // {
+      //   searchName: "dataSource",
+      //   searchType: "equals",
+      //   searchValue: getUserDataSource()
+      // }
     ])
   }).then(res => {
     const { data } = res;

@@ -209,13 +209,6 @@ export const getPageQuota = params => {
   return http.request("get", baseUrlApi("/quotation/page"), {
     params: {
       ...params
-      // searchStr: JSON.stringify([
-      //   {
-      //     searchName: "dataSource",
-      //     searchType: "equals",
-      //     searchValue: getUserDataSource()
-      //   }
-      // ])
     }
   });
 };

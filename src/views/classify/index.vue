@@ -96,7 +96,7 @@ const addCateData = async () => {
         level: curLevel.value
       };
       if (curLevel.value === 2) {
-        sendConfig.parentName = categoryList?.find(
+        sendConfig.parentName = categoryList.value?.find(
           item => item.id === newCateData.value.parentCode
         )?.categoryName;
         sendConfig.parentId = newCateData.value.parentId;
@@ -138,7 +138,7 @@ const updateCateData = val => {
     level: curLevel.value
   };
   if (curLevel.value === 2) {
-    sendConfig.parentName = categoryList?.find(
+    sendConfig.parentName = categoryList.value?.find(
       item => item.id === activeCateData.value.parentId
     )?.categoryName;
     sendConfig.parentId = activeCateData.value.parentId;
@@ -435,6 +435,7 @@ watch([currentPageNum, pageSize], () => {
               type="text"
               v-model="activeCateData.categoryCode"
               autocomplete="off"
+              disabled
             />
           </el-form-item>
         </template>
@@ -471,6 +472,7 @@ watch([currentPageNum, pageSize], () => {
               type="text"
               v-model="activeCateData.categoryCode"
               autocomplete="off"
+              disabled
             />
           </el-form-item>
         </template>
