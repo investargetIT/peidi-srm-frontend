@@ -6,15 +6,20 @@ import {
   addSupplier,
   updateSupplier,
   deleteSupplier,
-  getPagePd
+  getPagePd,
+  getProductInfo
 } from "@/api/user";
-import { ref, watch } from "vue";
+import { ref, watch, reactive } from "vue";
 import { message } from "@/utils/message";
 import { baseUrlApi, getCatePd } from "../../api/user";
 import { getToken, formatToken, getUserDataSource } from "@/utils/auth";
 import { getLastItem } from "../../utils/fun";
 import * as XLSX from "xlsx";
 import { debounce } from "@pureadmin/utils";
+import { buildTree } from "../../utils/common";
+import type { CascaderProps } from "element-plus";
+import { ElMessage } from "element-plus";
+
 defineOptions({
   name: "Welcome"
 });
@@ -43,7 +48,8 @@ const getAllCateFun = () => {
   getAllCate({}).then(res => {
     console.log("res", res);
     if (res?.code) {
-      allCateData.value = res?.data || [];
+      allCateData.value = buildTree(res?.data || []);
+      console.log("allCateData.value", allCateData.value);
     }
   });
 };
@@ -241,7 +247,7 @@ const addCateData = async () => {
         }
       });
 
-      addSupplier({
+      const sendConfig = {
         // 银行账号
         bankAccount: newSupplierData.value.bankAccount,
         // 营业执照
@@ -265,28 +271,40 @@ const addCateData = async () => {
         // supplier_grade 枚举接口传ID回来
         supplierGradeId: newSupplierData.value.supplierGradeId,
         // 接口  下拉选择  传id number【】
-        supplierProduct: newSupplierData.value.supplierProduct,
+        supplierProduct: getProductList(newSupplierData.value.supplierProduct),
         // 税号
         taxNumber: newSupplierData.value.taxNumber
-      })
-        .then(res => {
-          const { code, data, msg } = res;
-          if (res.code == 200) {
-            message("添加供应商成功", { type: "success" });
-            dialogFormVisible.value = false;
-            clearnewSupplierData();
-            getCurrentPage();
-          } else {
-            message("添加供应商失败--" + msg, { type: "error" });
-          }
-        })
-        .catch(err => {
-          message("添加分类失败", { type: "error" });
-        });
+      };
+
+      console.log("===提交数据查看==");
+      console.log(newSupplierData);
+      // addSupplier(sendConfig)
+      //   .then(res => {
+      //     const { code, data, msg } = res;
+      //     if (res.code == 200) {
+      //       message("添加供应商成功", { type: "success" });
+      //       dialogFormVisible.value = false;
+      //       clearnewSupplierData();
+      //       getCurrentPage();
+      //     } else {
+      //       message("添加供应商失败--" + msg, { type: "error" });
+      //     }
+      //   })
+      //   .catch(err => {
+      //     message("添加分类失败", { type: "error" });
+      //   });
     } else {
       console.log("error submit!", fields);
     }
   });
+};
+
+const getProductList = (source = []) => {
+  const resultArr: number[] = [];
+  source?.map(item => {
+    resultArr.push(item?.[2]);
+  });
+  return resultArr;
 };
 
 const dialogFormVisible = ref(false);
@@ -324,7 +342,9 @@ const newSupplierData = ref({
   supplierProduct: [],
   // 税号
   taxNumber: "string",
-  categoryId: ""
+  categoryId: "",
+  // 产品信息
+  productInfo: ""
 });
 
 const activeCateData = ref({});
@@ -606,6 +626,62 @@ getAllCateFun();
 getCurrentPage();
 getEnums();
 getAllPd();
+
+// 转换初始数据结构
+const convertNode = node => ({
+  value: node.id,
+  label: node.categoryName,
+  leaf: node.level === 2 ? false : node.children?.length === 0,
+  children: node.level === 1 ? undefined : node.children?.map(convertNode)
+});
+
+// 响应式数据
+const selectedValue = ref([]);
+const cascaderProps = reactive({
+  lazy: true,
+  multiple: true,
+  async lazyLoad(node, resolve) {
+    try {
+      let nodes = [];
+
+      if (node.level === 0) {
+        // 加载第一级数据（直接使用现有数据）
+        nodes = allCateData.value.map(item => ({
+          ...convertNode(item),
+          level: 1
+        }));
+      } else if (node.level === 1) {
+        // 加载第二级数据（直接使用现有子节点）
+        const parent = allCateData.value.find(p => p.id === node.value);
+        nodes =
+          parent?.children?.map(child => ({
+            ...convertNode(child),
+            level: 2
+          })) || [];
+      } else if (node.level === 2) {
+        // 动态加载第三级数据
+        nodes = await loadThirdLevelData(node.value);
+      }
+
+      resolve(nodes);
+    } catch (error) {
+      console.error("加载失败:", error);
+      ElMessage.error("数据加载失败");
+      resolve([]);
+    }
+  }
+});
+
+const loadThirdLevelData = async parentId => {
+  const res = await getCatePd({
+    categoryId: parentId
+  });
+  return res?.data?.map(item => ({
+    value: item?.id,
+    label: item?.productName,
+    leaf: true // 第三级设为叶子节点
+  }));
+};
 </script>
 
 <template>
@@ -794,6 +870,20 @@ getAllPd();
           </el-col>
         </el-row>
         <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item prop="productInfo" label="产品信息">
+              <el-cascader
+                collapse-tags
+                collapse-tags-tooltip
+                clearable
+                style="width: 400px"
+                :props="cascaderProps"
+                v-model="newSupplierData.productInfo"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="主分类">
               <el-select
@@ -810,7 +900,7 @@ getAllPd();
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item prop="supplierProduct" label="供应产品">
+            <!-- <el-form-item prop="supplierProduct" label="供应产品">
               <el-select
                 filterable
                 multiple
@@ -822,7 +912,7 @@ getAllPd();
                   :value="item.id"
                 />
               </el-select>
-            </el-form-item>
+            </el-form-item> -->
           </el-col>
         </el-row>
         <el-row :gutter="20">

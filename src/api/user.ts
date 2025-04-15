@@ -287,3 +287,10 @@ export const deleteYearList = data => {
     data
   });
 };
+
+// 获取产品信息
+export const getProductInfo = params => {
+  return http.request("get", baseUrlApi("/product/model"), {
+    params
+  });
+};
