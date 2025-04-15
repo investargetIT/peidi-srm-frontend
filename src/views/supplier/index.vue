@@ -271,28 +271,29 @@ const addCateData = async () => {
         // supplier_grade 枚举接口传ID回来
         supplierGradeId: newSupplierData.value.supplierGradeId,
         // 接口  下拉选择  传id number【】
-        supplierProduct: getProductList(newSupplierData.value.supplierProduct),
+        supplierProduct: getProductList(newSupplierData.value.productInfo),
         // 税号
         taxNumber: newSupplierData.value.taxNumber
       };
 
       console.log("===提交数据查看==");
       console.log(newSupplierData);
-      // addSupplier(sendConfig)
-      //   .then(res => {
-      //     const { code, data, msg } = res;
-      //     if (res.code == 200) {
-      //       message("添加供应商成功", { type: "success" });
-      //       dialogFormVisible.value = false;
-      //       clearnewSupplierData();
-      //       getCurrentPage();
-      //     } else {
-      //       message("添加供应商失败--" + msg, { type: "error" });
-      //     }
-      //   })
-      //   .catch(err => {
-      //     message("添加分类失败", { type: "error" });
-      //   });
+      console.log(sendConfig);
+      addSupplier(sendConfig)
+        .then(res => {
+          const { code, data, msg } = res;
+          if (res.code == 200) {
+            message("添加供应商成功", { type: "success" });
+            dialogFormVisible.value = false;
+            clearnewSupplierData();
+            getCurrentPage();
+          } else {
+            message("添加供应商失败--" + msg, { type: "error" });
+          }
+        })
+        .catch(err => {
+          message("添加分类失败", { type: "error" });
+        });
     } else {
       console.log("error submit!", fields);
     }
@@ -449,15 +450,18 @@ const openType = ref("new");
 const openUpdatePop = val => {
   console.log("val.row", val.row);
   openType.value = "update";
+  console.log("===点击编辑==");
+  console.log(val);
+  const promiseArr = val.row?.supplierProduct?.map(item => {
+    return getProductInfo({ Id: item });
+  });
+  Promise.all(promiseArr).then(res => {
+    console.log("res", res);
+  });
 
   activeCateData.value = JSON.parse(JSON.stringify(val.row));
   newSupplierData.value = JSON.parse(JSON.stringify(val.row));
   dialogFormVisible.value = true;
-  setTimeout(() => {
-    // console.log('document.querySelector()',document.querySelector('.ssss')?.querySelector('.el-select__placeholder')?.children[0].innerText = activeCateData.value.categoryName);
-    // document.querySelector('.ssss').querySelector('.el-select__placeholder').children[0].innerText = activeCateData.value.categoryName;
-    // document.querySelector('.dddd').querySelector('.el-select__placeholder').children[0].innerText = activeCateData.value.managementLevelName;
-  }, 100);
 };
 
 // 删除弹窗打开
@@ -599,7 +603,8 @@ const supplierRules = {
   ],
   bankAccount: [{ required: true, message: "输入银行账号", trigger: "blur" }],
   taxNumber: [{ required: true, message: "输入税号", trigger: "blur" }],
-  invoiceInfo: [{ required: true, message: "输入开票信息", trigger: "blur" }]
+  invoiceInfo: [{ required: true, message: "输入开票信息", trigger: "blur" }],
+  productInfo: [{ required: true, message: "请选择产品", trigger: "blur" }]
 };
 const dialogImageUrl = ref("");
 const dialogVisible = ref(false);
@@ -627,19 +632,13 @@ getCurrentPage();
 getEnums();
 getAllPd();
 
-// 转换初始数据结构
-const convertNode = node => ({
-  value: node.id,
-  label: node.categoryName,
-  leaf: node.level === 2 ? false : node.children?.length === 0,
-  children: node.level === 1 ? undefined : node.children?.map(convertNode)
-});
+const emptyCate = ref<number[]>([]);
 
 // 响应式数据
-const selectedValue = ref([]);
 const cascaderProps = reactive({
   lazy: true,
   multiple: true,
+  // checkStrictly: true,
   async lazyLoad(node, resolve) {
     try {
       let nodes = [];
@@ -647,19 +646,25 @@ const cascaderProps = reactive({
       if (node.level === 0) {
         // 加载第一级数据（直接使用现有数据）
         nodes = allCateData.value.map(item => ({
-          ...convertNode(item),
+          value: item.id,
+          label: item.categoryName,
+          leaf: false,
           level: 1
         }));
       } else if (node.level === 1) {
         // 加载第二级数据（直接使用现有子节点）
+
         const parent = allCateData.value.find(p => p.id === node.value);
-        nodes =
-          parent?.children?.map(child => ({
-            ...convertNode(child),
-            level: 2
-          })) || [];
+        nodes = (parent?.children || []).map(child => ({
+          value: child.id,
+          label: child.categoryName,
+          disabled: emptyCate.value.includes(child.id), // 动态禁用空分类
+          leaf: false,
+          level: 2
+        }));
       } else if (node.level === 2) {
         // 动态加载第三级数据
+        console.log("node.value", node.value);
         nodes = await loadThirdLevelData(node.value);
       }
 
@@ -676,11 +681,15 @@ const loadThirdLevelData = async parentId => {
   const res = await getCatePd({
     categoryId: parentId
   });
-  return res?.data?.map(item => ({
+  const nodes = res?.data?.map(item => ({
     value: item?.id,
     label: item?.productName,
     leaf: true // 第三级设为叶子节点
   }));
+  if (!nodes?.length) {
+    emptyCate.value = [...emptyCate.value, parentId];
+  }
+  return nodes;
 };
 </script>
 
@@ -878,6 +887,7 @@ const loadThirdLevelData = async parentId => {
                 clearable
                 style="width: 400px"
                 :props="cascaderProps"
+                placeholder="请选择产品"
                 v-model="newSupplierData.productInfo"
               />
             </el-form-item>
