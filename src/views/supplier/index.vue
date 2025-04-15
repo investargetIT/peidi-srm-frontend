@@ -684,7 +684,7 @@ const cascaderProps = reactive({
 
       setTimeout(() => {
         resolve(nodes);
-      }, 200);
+      }, 500);
     } catch (error) {
       console.error("加载失败:", error);
       ElMessage.error("数据加载失败");
