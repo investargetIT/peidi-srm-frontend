@@ -394,7 +394,7 @@ const updateCateData = async () => {
           contractInfoArr.push(item.url);
         }
       });
-      updateSupplier({
+      const sendConfig = {
         id: newSupplierData.value.id,
         // 银行账号
         bankAccount: newSupplierData.value.bankAccount,
@@ -419,10 +419,11 @@ const updateCateData = async () => {
         // supplier_grade 枚举接口传ID回来
         supplierGradeId: newSupplierData.value.supplierGradeId,
         // 接口  下拉选择  传id number【】
-        supplierProduct: newSupplierData.value.supplierProduct,
+        supplierProduct: getProductList(newSupplierData.value.productInfo),
         // 税号
         taxNumber: newSupplierData.value.taxNumber
-      })
+      };
+      updateSupplier(sendConfig)
         .then(res => {
           const { code, data, msg } = res;
           if (res.code == 200) {
@@ -448,17 +449,31 @@ const updateCateData = async () => {
 const openType = ref("new");
 // 打开更新弹窗
 const openUpdatePop = val => {
-  console.log("val.row", val.row);
   openType.value = "update";
-  console.log("===点击编辑==");
-  console.log(val);
+
   const promiseArr = val.row?.supplierProduct?.map(item => {
-    return getProductInfo({ Id: item });
+    return getProductInfo({ id: item });
   });
   Promise.all(promiseArr).then(res => {
     console.log("res", res);
-  });
+    // 构建级联选择器的值
+    const cascaderValue = res
+      .map(item => {
+        if (item?.data) {
+          // 返回 [一级ID, 二级ID, 三级ID] 格式的数据
+          return [
+            +item.data.parentCategoryId, // 一级分类ID
+            +item.data.categoryId, // 二级分类ID
+            item.data.id // 三级产品ID
+          ];
+        }
+        return null;
+      })
+      .filter(Boolean); // 过滤掉空值
 
+    // 设置级联选择器的值
+    newSupplierData.value.productInfo = cascaderValue;
+  });
   activeCateData.value = JSON.parse(JSON.stringify(val.row));
   newSupplierData.value = JSON.parse(JSON.stringify(val.row));
   dialogFormVisible.value = true;
