@@ -820,7 +820,7 @@ getAllPd();
           <el-col :span="12">
             <el-form-item label="主分类" prop="parentId">
               <el-select
-                v-model="newSupplierData.parentd"
+                v-model="newSupplierData.parentId"
                 :placeholder="activeCateData.categoryName"
                 filterable
               >
