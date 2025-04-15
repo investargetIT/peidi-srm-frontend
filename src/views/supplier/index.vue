@@ -898,8 +898,6 @@ const loadThirdLevelData = async parentId => {
           <el-col :span="24">
             <el-form-item prop="productInfo" label="产品信息">
               <el-cascader
-                collapse-tags
-                collapse-tags-tooltip
                 clearable
                 style="width: 400px"
                 :props="cascaderProps"

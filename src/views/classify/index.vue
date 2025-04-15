@@ -16,7 +16,7 @@ defineOptions({
 const categoryList = ref([]);
 const currentPage = ref<any[]>([]);
 const pageSizeArr = ref([5, 10, 15, 20]);
-const pageSize = ref(pageSizeArr.value[3]);
+const pageSize = ref(6000);
 const curLevel = ref(1);
 const dialogFormVisible = ref(false);
 const formLabelWidth = "140px";
@@ -330,9 +330,8 @@ watch([currentPageNum, pageSize], () => {
       v-model:current-page="currentPageNum"
       @current-change="changeCurrentPage"
       v-model:page-size="pageSize"
-      :page-sizes="pageSizeArr"
       @size-change="handleSizeChange"
-      layout="total, sizes, prev, pager, next, jumper"
+      layout="total,  prev,  next"
       :total="total"
     />
     <el-dialog
