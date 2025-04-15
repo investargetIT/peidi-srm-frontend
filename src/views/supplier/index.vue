@@ -450,12 +450,12 @@ const openType = ref("new");
 // 打开更新弹窗
 const openUpdatePop = val => {
   openType.value = "update";
-
+  activeCateData.value = JSON.parse(JSON.stringify(val.row));
+  newSupplierData.value = JSON.parse(JSON.stringify(val.row));
   const promiseArr = val.row?.supplierProduct?.map(item => {
     return getProductInfo({ id: item });
   });
   Promise.all(promiseArr).then(res => {
-    console.log("res", res);
     // 构建级联选择器的值
     const cascaderValue = res
       .map(item => {
@@ -474,8 +474,7 @@ const openUpdatePop = val => {
     // 设置级联选择器的值
     newSupplierData.value.productInfo = cascaderValue;
   });
-  activeCateData.value = JSON.parse(JSON.stringify(val.row));
-  newSupplierData.value = JSON.parse(JSON.stringify(val.row));
+
   dialogFormVisible.value = true;
 };
 
@@ -683,7 +682,9 @@ const cascaderProps = reactive({
         nodes = await loadThirdLevelData(node.value);
       }
 
-      resolve(nodes);
+      setTimeout(() => {
+        resolve(nodes);
+      }, 200);
     } catch (error) {
       console.error("加载失败:", error);
       ElMessage.error("数据加载失败");
@@ -908,38 +909,7 @@ const loadThirdLevelData = async parentId => {
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="主分类">
-              <el-select
-                v-model="newSupplierData.categoryId"
-                :placeholder="activeCateData.categoryName"
-                filterable
-              >
-                <el-option
-                  v-for="item in allCateData"
-                  :label="item.categoryName"
-                  :value="item.id"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <!-- <el-form-item prop="supplierProduct" label="供应产品">
-              <el-select
-                filterable
-                multiple
-                v-model="newSupplierData.supplierProduct"
-              >
-                <el-option
-                  v-for="item in cateAllPd"
-                  :label="item.productName"
-                  :value="item.id"
-                />
-              </el-select>
-            </el-form-item> -->
-          </el-col>
-        </el-row>
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item prop="bankAccount" label="银行账号">
