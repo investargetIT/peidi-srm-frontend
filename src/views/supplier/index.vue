@@ -15,6 +15,7 @@ import { getToken, formatToken, getUserDataSource } from "@/utils/auth";
 import { getLastItem } from "../../utils/fun";
 import * as XLSX from "xlsx";
 import { debounce } from "@pureadmin/utils";
+import { buildTree } from "@/utils/common";
 defineOptions({
   name: "Welcome"
 });
@@ -43,7 +44,7 @@ const getAllCateFun = () => {
   getAllCate({}).then(res => {
     console.log("res", res);
     if (res?.code) {
-      allCateData.value = res?.data || [];
+      allCateData.value = buildTree(res?.data || []);
     }
   });
 };
@@ -324,12 +325,16 @@ const newSupplierData = ref({
   supplierProduct: [],
   // 税号
   taxNumber: "string",
-  categoryId: ""
+  // 子分类id
+  categoryId: "",
+  // 父分类id
+  parentId: ""
 });
 
 const activeCateData = ref({});
 const dialogUpdateVisible = ref(false);
 const dialogDeleteVisible = ref(false);
+const subCategoryList = ref([]);
 
 // 更新分类接口
 const updateCateData = async () => {
@@ -483,6 +488,22 @@ watch(
   }
 );
 
+watch(
+  () => newSupplierData.value.parentId,
+  () => {
+    console.log("===父级数据变动===");
+    console.log(
+      "newSupplierData.value.parentId",
+      newSupplierData.value.parentId
+    );
+    console.log("allCateData.value", allCateData.value);
+    subCategoryList.value =
+      allCateData.value.find(item => item.id === newSupplierData.value.parentId)
+        ?.children || [];
+    console.log("subCategoryList", subCategoryList.value);
+  }
+);
+
 const addClass = ({ row }) => {
   if (row.enable === false) {
     return "disabled-row";
@@ -577,6 +598,8 @@ const supplierRules = {
   supplierProduct: [
     { required: true, message: "输入供应产品", trigger: "blur" }
   ],
+  parentId: [{ required: true, message: "选择主分类", trigger: "blur" }],
+  categoryId: [{ required: true, message: "选择子分类", trigger: "blur" }],
   bankAccount: [{ required: true, message: "输入银行账号", trigger: "blur" }],
   taxNumber: [{ required: true, message: "输入税号", trigger: "blur" }],
   invoiceInfo: [{ required: true, message: "输入开票信息", trigger: "blur" }]
@@ -795,9 +818,9 @@ getAllPd();
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="主分类">
+            <el-form-item label="主分类" prop="parentId">
               <el-select
-                v-model="newSupplierData.categoryId"
+                v-model="newSupplierData.parentd"
                 :placeholder="activeCateData.categoryName"
                 filterable
               >
@@ -810,11 +833,28 @@ getAllPd();
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="子分类" prop="categoryId">
+              <el-select
+                v-model="newSupplierData.categoryId"
+                :placeholder="activeCateData.categoryName"
+                filterable
+                :disabled="!newSupplierData.parentId"
+              >
+                <el-option
+                  v-for="item in subCategoryList"
+                  :label="item.categoryName"
+                  :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item prop="supplierProduct" label="供应产品">
               <el-select
                 filterable
                 multiple
                 v-model="newSupplierData.supplierProduct"
+                :disabled="!newSupplierData.categoryId"
               >
                 <el-option
                   v-for="item in cateAllPd"

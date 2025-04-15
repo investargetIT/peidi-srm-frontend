@@ -22,7 +22,7 @@ const dialogFormVisible = ref(false);
 const formLabelWidth = "140px";
 const newCateData = ref({
   categoryName: "",
-  categoryCode: "",
+  // categoryCode: "",
   parentName: "",
   parentId: "",
   date1: "",
@@ -132,7 +132,7 @@ const updateCateData = val => {
     return;
   }
   const sendConfig = {
-    categoryCode: "" + activeCateData.value.categoryCode,
+    // categoryCode: "" + activeCateData.value.categoryCode,
     categoryName: "" + activeCateData.value.categoryName,
     id: activeCateData.value.id,
     level: curLevel.value
@@ -351,7 +351,7 @@ watch([currentPageNum, pageSize], () => {
             <el-input v-model="newCateData.categoryName" autocomplete="off" />
           </el-form-item>
 
-          <el-form-item
+          <!-- <el-form-item
             label="主分类编码"
             prop="categoryCode"
             :label-width="formLabelWidth"
@@ -361,7 +361,7 @@ watch([currentPageNum, pageSize], () => {
               v-model="newCateData.categoryCode"
               autocomplete="off"
             />
-          </el-form-item>
+          </el-form-item> -->
         </template>
 
         <template v-if="curLevel === 2">
@@ -389,7 +389,7 @@ watch([currentPageNum, pageSize], () => {
           >
             <el-input v-model="newCateData.categoryName" autocomplete="off" />
           </el-form-item>
-          <el-form-item
+          <!-- <el-form-item
             label="子分类编码"
             prop="categoryCode"
             :label-width="formLabelWidth"
@@ -399,7 +399,7 @@ watch([currentPageNum, pageSize], () => {
               v-model="newCateData.categoryCode"
               autocomplete="off"
             />
-          </el-form-item>
+          </el-form-item> -->
         </template>
       </el-form>
       <template #footer>
