@@ -251,9 +251,6 @@ const updateCateData = async val => {
   if (!pdUpdateRef.value) return;
   await pdUpdateRef.value.validate((valid, fields) => {
     if (valid) {
-      console.log("submit!");
-      console.log("===表单信息数据==");
-      console.log(activeCateData);
       const imageList = [] as any[];
       const { photoList, parentId, ...rest } = activeCateData.value;
       photoList?.map(item => {
@@ -286,8 +283,6 @@ const updateCateData = async val => {
 
 // 打开更新弹窗
 const openUpdatePop = val => {
-  console.log("===点击更新===");
-  console.log(val);
   const {
     photoList,
     parentCategoryId,
@@ -335,7 +330,6 @@ const deletePop = val => {
 
 // 删除分类的方法
 const deleteCateFun = () => {
-  console.log("activeCateData.value", activeCateData.value);
   deletePd({
     id: activeCateData.value.id
   })
@@ -393,8 +387,6 @@ const handleFileChange = (file, files) => {
 };
 
 const handleCategoryChange = val => {
-  console.log("===主分类数据变更=");
-
   const newSubCategories =
     allCateData.value.find(item => item.id === val)?.children || [];
 

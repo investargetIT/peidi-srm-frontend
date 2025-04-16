@@ -46,20 +46,13 @@ const getEnums = () => {
 
 const getAllCateFun = () => {
   getAllCate({}).then(res => {
-    console.log("res", res);
     if (res?.code) {
       allCateData.value = buildTree(res?.data || []);
-      console.log("allCateData.value", allCateData.value);
     }
   });
 };
 
 const getAllPd = () => {
-  console.log(
-    "newSupplierData.value.categoryId",
-    newSupplierData.value.categoryId
-  );
-
   if (!newSupplierData.value.categoryId) {
     return;
   }
@@ -102,14 +95,8 @@ const getCurrentPage = () => {
     pageSize: Number(pageSize.value),
     searchStr: JSON.stringify(searchStr)
   }).then(res => {
-    console.log("res", res);
     if (res?.code) {
       currentPage.value = res?.data?.records || [];
-      console.log(
-        "currentPage.value.contactInfo",
-        currentPage.value,
-        currentPage.value.contactInfo
-      );
       // businessLicense
       currentPage.value.map(item => {
         let busArr: any = [];
@@ -217,8 +204,6 @@ const addCateData = async () => {
   if (!supplierFormRef.value) return;
   await supplierFormRef.value.validate((valid, fields) => {
     if (valid) {
-      console.log("submit!");
-
       let busFile = [];
       newSupplierData.value.businessLicense.map(item => {
         if (item.response.code == 200) {
@@ -275,10 +260,6 @@ const addCateData = async () => {
         // 税号
         taxNumber: newSupplierData.value.taxNumber
       };
-
-      console.log("===提交数据查看==");
-      console.log(newSupplierData);
-      console.log(sendConfig);
       addSupplier(sendConfig)
         .then(res => {
           const { code, data, msg } = res;
@@ -358,7 +339,6 @@ const updateCateData = async () => {
   if (!supplierFormRef.value) return;
   await supplierFormRef.value.validate((valid, fields) => {
     if (valid) {
-      console.log("submit!");
       let busFile = [];
       newSupplierData.value.businessLicense.map(item => {
         if (item.response?.code == 200) {
@@ -443,8 +423,6 @@ const updateCateData = async () => {
       console.log("error submit!", fields);
     }
   });
-  console.log("newSupplierData.value", newSupplierData.value);
-  // return
 };
 const openType = ref("new");
 // 打开更新弹窗
@@ -486,7 +464,6 @@ const deletePop = val => {
 
 // 删除分类的方法
 const deleteCateFun = () => {
-  console.log("activeCateData.value", activeCateData.value);
   deleteSupplier({
     id: activeCateData.value.id
   })
@@ -678,7 +655,6 @@ const cascaderProps = reactive({
         }));
       } else if (node.level === 2) {
         // 动态加载第三级数据
-        console.log("node.value", node.value);
         nodes = await loadThirdLevelData(node.value);
       }
 
