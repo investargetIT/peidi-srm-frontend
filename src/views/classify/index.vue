@@ -291,7 +291,6 @@ watch([currentPageNum, pageSize], () => {
       :data="currentPage"
       style="width: 90%; margin-bottom: 20px"
       border
-      default-expand-all
       row-key="id"
       :tree-props="{ children: 'children' }"
     >
