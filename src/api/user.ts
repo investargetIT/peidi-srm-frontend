@@ -294,3 +294,10 @@ export const getProductInfo = params => {
     params
   });
 };
+
+// 获取所有产品
+export const fetchProductList = params => {
+  return http.request("get", baseUrlApi("/product/list"), {
+    params
+  });
+};

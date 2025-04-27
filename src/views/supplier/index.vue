@@ -7,13 +7,13 @@ import {
   updateSupplier,
   deleteSupplier,
   getPagePd,
-  getProductInfo
+  getProductInfo,
+  fetchProductList
 } from "@/api/user";
 import { ref, watch, reactive } from "vue";
 import { message } from "@/utils/message";
 import { baseUrlApi, getCatePd } from "../../api/user";
 import { getToken, formatToken, getUserDataSource } from "@/utils/auth";
-import { getLastItem } from "../../utils/fun";
 import * as XLSX from "xlsx";
 import { debounce } from "@pureadmin/utils";
 import { buildTree } from "../../utils/common";
@@ -27,8 +27,82 @@ defineOptions({
 const allCateData = ref([]);
 const cateAllPd = ref([]);
 const currentPage = ref([]);
-
+const emptyCate = ref<number[]>([]);
 const enums = ref([]);
+const pageSizeArr = ref([5, 10, 15, 20]);
+const pageSize = ref(pageSizeArr.value[3]);
+const total = ref(0);
+const currentPageNum = ref(1);
+const dialogFormVisible = ref(false);
+const newSupplierData = ref({
+  // 银行账号
+  bankAccount: "",
+  // 营业执照
+  businessLicense: [],
+  // 公司地址
+  companyAddress: "",
+  // 公司名称
+  companyName: "",
+  // 联系方式 + 联系人
+  contactInfo: [
+    {
+      person: "",
+      info: ""
+    }
+  ],
+  // 合同信息
+  contractInfo: [],
+  id: 0,
+  // 开票信息
+  invoiceInfo: "",
+  // 生产许可证
+  productionLicense: [],
+  // 注册信息
+  registrationInfo: "",
+  // 相关证书
+  relatedCertificate: [],
+  // supplier_grade 枚举接口传ID回来
+  supplierGradeId: "",
+  // 接口  下拉选择  传id number【】
+  supplierProduct: [],
+  // 税号
+  taxNumber: "string",
+  categoryId: "",
+  // 产品信息
+  productInfo: ""
+});
+const activeCateData = ref({});
+const dialogUpdateVisible = ref(false);
+const dialogDeleteVisible = ref(false);
+const openType = ref("new");
+const uploadUrl = baseUrlApi("/supplier/upload"); // 替换为实际的后端上传接口地址
+const selectedRows = ref([]);
+const selectedRowCount = ref(0);
+const supplierFormRef = ref("");
+const supplierRules = {
+  companyName: [{ required: true, message: "输入公司名称", trigger: "blur" }],
+  companyAddress: [
+    { required: true, message: "输入公司地址", trigger: "blur" }
+  ],
+  registrationInfo: [
+    { required: true, message: "输入注册信息", trigger: "blur" }
+  ],
+  supplierProduct: [
+    { required: true, message: "输入供应产品", trigger: "blur" }
+  ],
+  bankAccount: [{ required: true, message: "输入银行账号", trigger: "blur" }],
+  taxNumber: [{ required: true, message: "输入税号", trigger: "blur" }],
+  invoiceInfo: [{ required: true, message: "输入开票信息", trigger: "blur" }],
+  productInfo: [{ required: true, message: "请选择产品", trigger: "blur" }]
+};
+const dialogImageUrl = ref("");
+const dialogVisible = ref(false);
+const searchInfo = ref({
+  supplierName: "",
+  supplierPerson: ""
+});
+const allProductList = ref([]);
+
 const getEnums = () => {
   getEnum({
     type: "supplier_grade"
@@ -44,14 +118,6 @@ const getEnums = () => {
     });
 };
 
-const getAllCateFun = () => {
-  getAllCate({}).then(res => {
-    if (res?.code) {
-      allCateData.value = buildTree(res?.data || []);
-    }
-  });
-};
-
 const getAllPd = () => {
   if (!newSupplierData.value.categoryId) {
     return;
@@ -65,14 +131,10 @@ const getAllPd = () => {
     }
   });
 };
-const pageSizeArr = ref([5, 10, 15, 20]);
-const pageSize = ref(pageSizeArr.value[3]);
-const total = ref(0);
 
 const handleSizeChange = (val: number) => {
   pageSize.value = val;
 };
-const currentPageNum = ref(1);
 
 const getCurrentPage = () => {
   const searchStr: any = [];
@@ -286,52 +348,8 @@ const getProductList = (source = []) => {
   source?.map(item => {
     resultArr.push(item?.[2]);
   });
-  return resultArr;
+  return resultArr.filter(item => item);
 };
-
-const dialogFormVisible = ref(false);
-// const formLabelWidth = '140px'
-const newSupplierData = ref({
-  // 银行账号
-  bankAccount: "",
-  // 营业执照
-  businessLicense: [],
-  // 公司地址
-  companyAddress: "",
-  // 公司名称
-  companyName: "",
-  // 联系方式 + 联系人
-  contactInfo: [
-    {
-      person: "",
-      info: ""
-    }
-  ],
-  // 合同信息
-  contractInfo: [],
-  id: 0,
-  // 开票信息
-  invoiceInfo: "",
-  // 生产许可证
-  productionLicense: [],
-  // 注册信息
-  registrationInfo: "",
-  // 相关证书
-  relatedCertificate: [],
-  // supplier_grade 枚举接口传ID回来
-  supplierGradeId: "",
-  // 接口  下拉选择  传id number【】
-  supplierProduct: [],
-  // 税号
-  taxNumber: "string",
-  categoryId: "",
-  // 产品信息
-  productInfo: ""
-});
-
-const activeCateData = ref({});
-const dialogUpdateVisible = ref(false);
-const dialogDeleteVisible = ref(false);
 
 // 更新分类接口
 const updateCateData = async () => {
@@ -424,7 +442,7 @@ const updateCateData = async () => {
     }
   });
 };
-const openType = ref("new");
+
 // 打开更新弹窗
 const openUpdatePop = val => {
   openType.value = "update";
@@ -486,25 +504,11 @@ const changeCurrentPage = val => {
   console.log("val", val);
 };
 
-watch([currentPageNum, pageSize], () => {
-  console.log("currentPageNum", currentPageNum.value);
-  getCurrentPage();
-});
-
-watch(
-  () => newSupplierData.value.categoryId,
-  () => {
-    getAllPd();
-  }
-);
-
 const addClass = ({ row }) => {
   if (row.enable === false) {
     return "disabled-row";
   }
 };
-
-const uploadUrl = baseUrlApi("/supplier/upload"); // 替换为实际的后端上传接口地址
 
 const handleUploadSuccess = (response, from, fileList, ddd) => {
   if (from == "businessLicense") {
@@ -539,8 +543,6 @@ const beforeUpload = file => {
   return true;
 };
 
-const selectedRows = ref([]);
-const selectedRowCount = ref(0);
 const handleSelectionChange = val => {
   console.log("val", val);
 
@@ -580,34 +582,181 @@ const exportOut = () => {
   XLSX.writeFile(workbook, "data.xlsx");
 };
 
-const supplierFormRef = ref("");
-const supplierRules = {
-  companyName: [{ required: true, message: "输入公司名称", trigger: "blur" }],
-  companyAddress: [
-    { required: true, message: "输入公司地址", trigger: "blur" }
-  ],
-  registrationInfo: [
-    { required: true, message: "输入注册信息", trigger: "blur" }
-  ],
-  supplierProduct: [
-    { required: true, message: "输入供应产品", trigger: "blur" }
-  ],
-  bankAccount: [{ required: true, message: "输入银行账号", trigger: "blur" }],
-  taxNumber: [{ required: true, message: "输入税号", trigger: "blur" }],
-  invoiceInfo: [{ required: true, message: "输入开票信息", trigger: "blur" }],
-  productInfo: [{ required: true, message: "请选择产品", trigger: "blur" }]
-};
-const dialogImageUrl = ref("");
-const dialogVisible = ref(false);
 const handlePictureCardPreview = uploadFile => {
   dialogImageUrl.value = uploadFile.url!;
   dialogVisible.value = true;
 };
 
-const searchInfo = ref({
-  supplierName: "",
-  supplierPerson: ""
-});
+function convertToTree(data) {
+  const level1Map = {};
+
+  data.forEach(item => {
+    const { parentCategoryId, categoryId } = item;
+
+    if (!parentCategoryId || !categoryId) return;
+
+    // 处理第一级：使用 parentCategoryName 作为 label
+    if (!level1Map[parentCategoryId]) {
+      level1Map[parentCategoryId] = {
+        value: parseInt(parentCategoryId, 10),
+        label: item.parentCategoryName || parentCategoryId, // 优先用名称，无则用ID
+        children: {}
+      };
+    }
+
+    // 处理第二级：使用 categoryName 作为 label
+    const level1Node = level1Map[parentCategoryId];
+    if (!level1Node.children[categoryId]) {
+      level1Node.children[categoryId] = {
+        value: parseInt(categoryId, 10),
+        label: item.categoryName || categoryId, // 优先用名称，无则用ID
+        children: []
+      };
+    }
+
+    // 处理第三级：使用 productName 作为 label
+    level1Node.children[categoryId].children.push({
+      value: item.id,
+      label: item.productName || "Unnamed"
+    });
+  });
+
+  // 转换为树形结构
+  return Object.values(level1Map).map(level1 => ({
+    ...level1,
+    children: Object.values(level1.children)
+  }));
+}
+
+/**
+ * 将 sourceData 和原始返回数据合并为完整树结构
+ * @param {Array} sourceData 原始分类数据（包含层级关系）
+ * @param {Array} rawTreeData 原始返回的树数据（包含第三级节点）
+ * @returns {Array} 合并后的完整树结构
+ */
+const mergeTreeData = (sourceData, rawTreeData) => {
+  // 1. 将 sourceData 转换为目标格式的树结构（仅保留一、二级）
+  const buildBaseTree = data => {
+    const treeMap = {}; // 一级节点映射表：parentId => 节点
+    const idToNodeMap = {}; // 所有节点映射表：id => 节点（用于快速查找）
+
+    // 递归处理节点
+    const processNode = node => {
+      const convertedNode = {
+        value: node.id,
+        label: node.categoryName,
+        children: []
+      };
+      idToNodeMap[node.id] = convertedNode; // 记录节点映射
+
+      if (node.children && node.children.length > 0) {
+        convertedNode.children = node.children.map(child => processNode(child));
+      }
+      return convertedNode;
+    };
+
+    // 遍历 sourceData，构建树
+    data.forEach(item => {
+      const convertedNode = processNode(item);
+      treeMap[item.id] = convertedNode; // 一级节点直接记录
+    });
+
+    return { tree: Object.values(treeMap), idToNodeMap };
+  };
+
+  // 2. 将 rawTreeData 的第三级节点挂载到 sourceData 对应的二级节点下
+  const attachLeafNodes = (sourceTree, idToNodeMap, rawData) => {
+    rawData.forEach(level1 => {
+      level1.children.forEach(level2 => {
+        // 根据 rawTreeData 的 level2.value（即 categoryId）找到对应的二级节点
+        const targetLevel2Node = idToNodeMap[level2.value];
+        if (targetLevel2Node) {
+          // 将第三级节点添加到该二级节点的 children 中
+          targetLevel2Node.children.push(...level2.children);
+        }
+      });
+    });
+    return sourceTree;
+  };
+
+  // 执行合并
+  const { tree: baseTree, idToNodeMap } = buildBaseTree(sourceData);
+  return attachLeafNodes(baseTree, idToNodeMap, rawTreeData);
+};
+
+const fetchMergeTreeData = async () => {
+  let curCatList = [] as any;
+  let curProductList = [] as any;
+  const curCatRes = await getAllCate({});
+  if (curCatRes?.code) {
+    curCatList = buildTree(curCatRes?.data || []);
+  }
+  const curProductRes = await fetchProductList({});
+  if (curCatRes?.code) {
+    curProductList = convertToTree(curProductRes?.data || []);
+  }
+  const mergedTree = mergeTreeData(curCatList, curProductList);
+  allProductList.value = mergedTree;
+};
+
+// 响应式数据
+// const cascaderProps = reactive({
+//   lazy: true,
+//   multiple: true,
+//   // checkStrictly: true,
+//   async lazyLoad(node, resolve) {
+//     try {
+//       let nodes = [];
+
+//       if (node.level === 0) {
+//         // 加载第一级数据（直接使用现有数据）
+//         nodes = allCateData.value.map(item => ({
+//           value: item.id,
+//           label: item.categoryName,
+//           leaf: false,
+//           level: 1
+//         }));
+//       } else if (node.level === 1) {
+//         // 加载第二级数据（直接使用现有子节点）
+
+//         const parent = allCateData.value.find(p => p.id === node.value);
+//         nodes = (parent?.children || []).map(child => ({
+//           value: child.id,
+//           label: child.categoryName,
+//           disabled: emptyCate.value.includes(child.id), // 动态禁用空分类
+//           leaf: false,
+//           level: 2
+//         }));
+//       } else if (node.level === 2) {
+//         // 动态加载第三级数据
+//         nodes = await loadThirdLevelData(node.value);
+//       }
+
+//       setTimeout(() => {
+//         resolve(nodes);
+//       }, 500);
+//     } catch (error) {
+//       console.error("加载失败:", error);
+//       ElMessage.error("数据加载失败");
+//       resolve([]);
+//     }
+//   }
+// });
+
+// const loadThirdLevelData = async parentId => {
+//   const res = await getCatePd({
+//     categoryId: parentId
+//   });
+//   const nodes = res?.data?.map(item => ({
+//     value: item?.id,
+//     label: item?.productName,
+//     leaf: true // 第三级设为叶子节点
+//   }));
+//   if (!nodes?.length) {
+//     emptyCate.value = [...emptyCate.value, parentId];
+//   }
+//   return nodes;
+// };
 
 // searchInfo变动时重新获取数据，但是不能调用搜索太频繁了
 watch(
@@ -618,71 +767,21 @@ watch(
   { deep: true }
 );
 
-getAllCateFun();
-getCurrentPage();
-getEnums();
-getAllPd();
-
-const emptyCate = ref<number[]>([]);
-
-// 响应式数据
-const cascaderProps = reactive({
-  lazy: true,
-  multiple: true,
-  // checkStrictly: true,
-  async lazyLoad(node, resolve) {
-    try {
-      let nodes = [];
-
-      if (node.level === 0) {
-        // 加载第一级数据（直接使用现有数据）
-        nodes = allCateData.value.map(item => ({
-          value: item.id,
-          label: item.categoryName,
-          leaf: false,
-          level: 1
-        }));
-      } else if (node.level === 1) {
-        // 加载第二级数据（直接使用现有子节点）
-
-        const parent = allCateData.value.find(p => p.id === node.value);
-        nodes = (parent?.children || []).map(child => ({
-          value: child.id,
-          label: child.categoryName,
-          disabled: emptyCate.value.includes(child.id), // 动态禁用空分类
-          leaf: false,
-          level: 2
-        }));
-      } else if (node.level === 2) {
-        // 动态加载第三级数据
-        nodes = await loadThirdLevelData(node.value);
-      }
-
-      setTimeout(() => {
-        resolve(nodes);
-      }, 500);
-    } catch (error) {
-      console.error("加载失败:", error);
-      ElMessage.error("数据加载失败");
-      resolve([]);
-    }
-  }
+watch([currentPageNum, pageSize], () => {
+  console.log("currentPageNum", currentPageNum.value);
+  getCurrentPage();
 });
 
-const loadThirdLevelData = async parentId => {
-  const res = await getCatePd({
-    categoryId: parentId
-  });
-  const nodes = res?.data?.map(item => ({
-    value: item?.id,
-    label: item?.productName,
-    leaf: true // 第三级设为叶子节点
-  }));
-  if (!nodes?.length) {
-    emptyCate.value = [...emptyCate.value, parentId];
+watch(
+  () => newSupplierData.value.categoryId,
+  () => {
+    getAllPd();
   }
-  return nodes;
-};
+);
+
+getCurrentPage();
+getEnums();
+fetchMergeTreeData();
 </script>
 
 <template>
@@ -877,7 +976,10 @@ const loadThirdLevelData = async parentId => {
                 clearable
                 filterable
                 style="width: 400px"
-                :props="cascaderProps"
+                :props="{
+                  multiple: true
+                }"
+                :options="allProductList"
                 placeholder="请选择产品"
                 v-model="newSupplierData.productInfo"
               />
