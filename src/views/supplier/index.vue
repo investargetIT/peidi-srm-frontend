@@ -875,6 +875,7 @@ const loadThirdLevelData = async parentId => {
             <el-form-item prop="productInfo" label="产品信息">
               <el-cascader
                 clearable
+                filterable
                 style="width: 400px"
                 :props="cascaderProps"
                 placeholder="请选择产品"
