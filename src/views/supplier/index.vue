@@ -19,6 +19,7 @@ import { debounce } from "@pureadmin/utils";
 import { buildTree } from "../../utils/common";
 import type { CascaderProps } from "element-plus";
 import { ElMessage } from "element-plus";
+import { expirableLocalStorage } from "@/utils/customLocalStorage";
 
 defineOptions({
   name: "Welcome"
@@ -691,9 +692,21 @@ const fetchMergeTreeData = async () => {
   if (curCatRes?.code) {
     curCatList = buildTree(curCatRes?.data || []);
   }
-  const curProductRes = await fetchProductList({});
-  if (curCatRes?.code) {
-    curProductList = convertToTree(curProductRes?.data || []);
+  // 缓存读取所有产品数据
+  const curLocalProductData = expirableLocalStorage.getJSON("productList");
+  // 检查本地缓存中是否存在产品列表数据
+  if (curLocalProductData) {
+    // 如果存在缓存数据，直接使用缓存数据并转换为树形结构
+    curProductList = convertToTree(curLocalProductData);
+  } else {
+    // 如果没有缓存数据，从接口获取产品列表
+    const curProductRes = await fetchProductList({});
+    if (curCatRes?.code) {
+      // 将接口返回的数据转换为树形结构
+      curProductList = convertToTree(curProductRes?.data || []);
+      // 将新获取的数据存入本地缓存
+      expirableLocalStorage.setJSON("productList", curProductRes?.data || []);
+    }
   }
   const mergedTree = mergeTreeData(curCatList, curProductList);
   allProductList.value = mergedTree;
