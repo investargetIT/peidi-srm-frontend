@@ -147,7 +147,7 @@ watch(dialogFormVisible, newVal => {
 const getCurrentPage = () => {
   const searchStr: any = [];
   searchStr.push({
-    searchName: "categoryName",
+    searchName: "parentCategoryName",
     searchType: "like",
     searchValue: searchInfo.value.categoryName
   });
