@@ -13,7 +13,12 @@ import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { ref, reactive, toRaw, onMounted, onBeforeUnmount } from "vue";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
 import { initDingH5RemoteDebug } from "dingtalk-h5-remote-debug";
-import { getUserInfo, register, getUserDataSourceApi } from "../../api/user";
+import {
+  getUserInfo,
+  register,
+  getUserDataSourceApi,
+  getAllCate
+} from "../../api/user";
 import registerCom from "./register.vue";
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
@@ -64,8 +69,20 @@ const onLogin = async (formEl: FormInstance | undefined) => {
               }
               // 获取后端路由
               return initRouter().then(() => {
-                router.push(getTopMenu(true).path).then(() => {
-                  message("登录成功", { type: "success" });
+                // 获取一级分类数据
+                getAllCate({}).then(res => {
+                  if (res.success) {
+                    const level1Categories = res.data.filter(
+                      item => item.level === 1
+                    );
+                    localStorage.setItem(
+                      "level1Categories",
+                      JSON.stringify(level1Categories)
+                    );
+                  }
+                  router.push(getTopMenu(true).path).then(() => {
+                    message("登录成功", { type: "success" });
+                  });
                 });
               });
             });

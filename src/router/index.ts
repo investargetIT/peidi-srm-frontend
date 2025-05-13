@@ -70,23 +70,25 @@ const routes = [
   {
     path: "/productFile",
     name: "productFile",
-    redirect: "/productFile/index",
     component: Layout,
     meta: {
       icon: "prime:book",
-      title: "首页",
+      title: "产品管理",
       rank: 0
     },
     children: [
-      {
-        path: "/productFile/index",
-        name: "productFile",
-        component: () => import("@/views/productFile/index.vue"),
-        meta: {
-          title: "产品档案",
-          showParent: false
-        }
-      }
+      ...JSON.parse(localStorage.getItem("level1Categories") || "[]").map(
+        category => ({
+          path: `/productFile/${category.categoryCode}`,
+          name: `${category.categoryName}`,
+          component: () => import("@/views/productFile/index.vue"),
+          props: route => ({ categoryCode: route.params.categoryCode }),
+          meta: {
+            title: category.categoryName,
+            showParent: true
+          }
+        })
+      )
     ]
   },
   {

@@ -10,6 +10,7 @@ import {
   getFileDownLoadPath
 } from "@/api/user";
 import { ref, watch, computed, watchEffect } from "vue";
+import { useRoute } from "vue-router";
 import { message } from "@/utils/message";
 import { debounce, storageLocal } from "@pureadmin/utils";
 import { formatToken, getToken } from "@/utils/auth.ts";
@@ -58,8 +59,10 @@ const pdRules = {
   ]
 };
 const currentPageNum = ref(1);
+const route = useRoute();
+
 const searchInfo = ref({
-  categoryName: "",
+  categoryName: (route.name as string) || "",
   productName: ""
 });
 
@@ -143,13 +146,11 @@ watch(dialogFormVisible, newVal => {
 
 const getCurrentPage = () => {
   const searchStr: any = [];
-  if (searchInfo.value.categoryName) {
-    searchStr.push({
-      searchName: "categoryName",
-      searchType: "like",
-      searchValue: searchInfo.value.categoryName
-    });
-  }
+  searchStr.push({
+    searchName: "categoryName",
+    searchType: "like",
+    searchValue: searchInfo.value.categoryName
+  });
   if (searchInfo.value.productName) {
     searchStr.push({
       searchName: "productName",
@@ -408,11 +409,6 @@ const handleCategoryChange = val => {
 <template>
   <div class="container">
     <div class="button-con absolute top-2 left-[60px] flex gap-2">
-      <el-input
-        v-model="searchInfo.categoryName"
-        style="width: 240px"
-        placeholder="请输入主分类"
-      />
       <el-input
         v-model="searchInfo.productName"
         style="width: 240px"
