@@ -72,9 +72,9 @@ const onLogin = async (formEl: FormInstance | undefined) => {
                 // 获取一级分类数据
                 getAllCate({}).then(res => {
                   if (res.success) {
-                    const level1Categories = res.data.filter(
-                      item => item.level === 1
-                    );
+                    const level1Categories = res.data
+                      .filter(item => item.level === 1)
+                      .sort((a, b) => a.id - b.id);
                     localStorage.setItem(
                       "level1Categories",
                       JSON.stringify(level1Categories)

@@ -62,8 +62,9 @@ const currentPageNum = ref(1);
 const route = useRoute();
 
 const searchInfo = ref({
-  categoryName: (route.name as string) || "",
-  productName: ""
+  parentCategoryName: (route.name as string) || "",
+  productName: "",
+  categoryName: ""
 });
 
 const dialogFormVisible = ref(false);
@@ -146,19 +147,16 @@ watch(dialogFormVisible, newVal => {
 
 const getCurrentPage = () => {
   const searchStr: any = [];
-  searchStr.push({
-    searchName: "parentCategoryName",
-    searchType: "like",
-    searchValue: searchInfo.value.categoryName
-  });
-  if (searchInfo.value.productName) {
-    searchStr.push({
-      searchName: "productName",
-      searchType: "like",
-      searchValue: searchInfo.value.productName
-    });
-  }
 
+  Object.keys(searchInfo.value).forEach(key => {
+    if (searchInfo.value[key]) {
+      searchStr.push({
+        searchName: key,
+        searchType: "like",
+        searchValue: searchInfo.value[key]
+      });
+    }
+  });
   getPagePd({
     pageNo: Number(currentPageNum.value),
     pageSize: Number(pageSize.value),
@@ -409,6 +407,11 @@ const handleCategoryChange = val => {
 <template>
   <div class="container">
     <div class="button-con absolute top-2 left-[60px] flex gap-2">
+      <el-input
+        v-model="searchInfo.categoryName"
+        style="width: 240px"
+        placeholder="请输入子分类"
+      />
       <el-input
         v-model="searchInfo.productName"
         style="width: 240px"
