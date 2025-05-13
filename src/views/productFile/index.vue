@@ -60,6 +60,7 @@ const pdRules = {
 };
 const currentPageNum = ref(1);
 const route = useRoute();
+const categoryNameList = ref([]);
 
 const searchInfo = ref({
   parentCategoryName: (route.name as string) || "",
@@ -402,16 +403,34 @@ const handleCategoryChange = val => {
     }
   }
 };
+
+// Add watch effect to monitor allCateData changes
+watchEffect(() => {
+  if (allCateData.value && allCateData.value.length > 0) {
+    categoryNameList.value =
+      allCateData.value.find(item => item.categoryName === route.name)
+        ?.children || [];
+    console.log("categoryNameList", categoryNameList.value);
+  }
+});
 </script>
 
 <template>
   <div class="container">
     <div class="button-con absolute top-2 left-[60px] flex gap-2">
-      <el-input
+      <el-select
         v-model="searchInfo.categoryName"
         style="width: 240px"
-        placeholder="请输入子分类"
-      />
+        placeholder="请选择子分类"
+        filterable
+        clearable
+      >
+        <el-option
+          v-for="item in categoryNameList"
+          :label="item.categoryName"
+          :value="item.categoryName"
+        />
+      </el-select>
       <el-input
         v-model="searchInfo.productName"
         style="width: 240px"
