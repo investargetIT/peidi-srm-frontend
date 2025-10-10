@@ -17,7 +17,9 @@ import {
   getUserInfo,
   register,
   getUserDataSourceApi,
-  getAllCate
+  getAllCate,
+  registerMobile,
+  getUserSite
 } from "../../api/user";
 import registerCom from "./register.vue";
 import dayIcon from "@/assets/svg/day.svg?component";
@@ -43,9 +45,16 @@ const { dataTheme, overallStyle, dataThemeChange } = useDataThemeChange();
 dataThemeChange(overallStyle.value);
 const { title } = useNav();
 initDingH5RemoteDebug();
+const siteList = ref([
+  // {
+  //   label: "杭州",
+  //   value: "hangzhou"
+  // }
+]);
 const ruleForm = reactive({
   username: "",
-  password: ""
+  password: "",
+  site: ""
 });
 const onLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
@@ -55,7 +64,8 @@ const onLogin = async (formEl: FormInstance | undefined) => {
       useUserStoreHook()
         .loginByUsername({
           username: ruleForm.username,
-          password: ruleForm.password
+          password: ruleForm.password,
+          site: ruleForm.site
         })
         .then(res => {
           if (res.success) {
@@ -109,12 +119,12 @@ const ddLogin = () => {
           if (res.success) {
             const { data: ddUserInfo } = res;
             console.log("ddUserInfo", ddUserInfo);
-            const { org_email, name, userid } = ddUserInfo;
+            const { org_email, name, userid, mobile } = ddUserInfo;
             if (org_email) {
               console.log("ddEmail", org_email);
               ddUserEmail = org_email;
               // 获取到钉钉用户企业邮箱，调用注册接口
-              ruleForm.username = ddUserEmail;
+              ruleForm.username = `${ddUserEmail}`;
               ruleForm.password = DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD;
               return register({
                 email: org_email,
@@ -122,12 +132,29 @@ const ddLogin = () => {
                 password: DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD,
                 username: name,
                 dataSource: 1,
+                dingId: userid,
+                mobile: mobile
+              });
+            } else if (mobile) {
+              console.log("使用手机号注册，mobile:", mobile);
+              ruleForm.username = `${mobile}`;
+              ruleForm.password = DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD;
+
+              // 使用手机号注册，添加标识
+              return registerMobile({
+                mobile,
+                mobileCode: "",
+                password: DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD,
+                username: name,
                 dingId: userid
               });
             } else {
-              message("获取钉钉用户企业邮箱失败：" + JSON.stringify(res), {
-                type: "error"
-              });
+              message(
+                "获取钉钉用户邮箱和手机号都失败：" + JSON.stringify(res),
+                {
+                  type: "error"
+                }
+              );
             }
           } else {
             message("用户注册失败：" + JSON.stringify(res), { type: "error" });
@@ -135,20 +162,37 @@ const ddLogin = () => {
         })
         .then(res => {
           if (res) {
-            if (
-              res.success ||
-              (res.code === 100100002 &&
-                res.msg === "EMAIL_ACCOUNT_ALREADY_EXIST")
-            ) {
-              // 注册成功，调用登录接口
+            // 获取当前用户信息来判断注册类型
+            const ddUserInfo = JSON.parse(
+              localStorage.getItem("ddUserInfo") || "{}"
+            );
+            const isEmailRegistration = !!ddUserInfo.org_email;
 
-              // return request(process.env.USER_AUTH_BASE_URL + '/user/login/password', {
-              //   method: 'POST',
-              //   data: `username=${ddUserEmail}&password=${process.env.DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD}`,
-              // });
+            let registrationSuccess = false;
+
+            if (isEmailRegistration) {
+              // 邮箱注册的判断条件
+              registrationSuccess =
+                res.success ||
+                (res.code === 100100002 &&
+                  res.msg === "EMAIL_ACCOUNT_ALREADY_EXIST");
+              console.log("邮箱注册结果:", res);
+            } else {
+              // 手机号注册的判断条件
+              registrationSuccess =
+                res.success ||
+                (res.code === 100100003 &&
+                  res.msg === "PHONE_ACCOUNT_ALREADY_EXIST");
+              console.log("手机号注册结果:", res);
+            }
+
+            if (registrationSuccess) {
+              // 注册成功，调用登录接口
+              console.log("注册成功，开始登录");
               onLogin(ruleFormRef.value);
             } else {
-              message("用户注册失败：" + JSON.stringify(res), {
+              const registrationType = isEmailRegistration ? "邮箱" : "手机号";
+              message(`${registrationType}注册失败：` + JSON.stringify(res), {
                 type: "error"
               });
             }
@@ -186,6 +230,15 @@ function onkeypress({ code }: KeyboardEvent) {
 onMounted(() => {
   checkSourceParam();
   window.document.addEventListener("keypress", onkeypress);
+
+  // 获取基地信息
+  getUserSite().then(res => {
+    if (res.success) {
+      const { data } = res;
+      console.log("siteList", data);
+      siteList.value = data;
+    }
+  });
 });
 
 onBeforeUnmount(() => {
@@ -271,6 +324,25 @@ function openRegisterDialog() {
                 />
               </el-form-item>
             </Motion>
+
+            <Motion :delay="150">
+              <el-form-item prop="site">
+                <el-select v-model="ruleForm.site" clearable placeholder="基地">
+                  <template #prefix>
+                    <el-icon size="14" style="margin-right: 2px">
+                      <LocationFilled />
+                    </el-icon>
+                  </template>
+                  <el-option
+                    v-for="item in siteList"
+                    :key="item.id"
+                    :label="item.siteName"
+                    :value="item.id"
+                  />
+                </el-select>
+              </el-form-item>
+            </Motion>
+
             <Motion :delay="250">
               <el-button
                 class="w-full mt-4"
@@ -304,5 +376,13 @@ function openRegisterDialog() {
 <style lang="scss" scoped>
 :deep(.el-input-group__append, .el-input-group__prepend) {
   padding: 0;
+}
+
+:deep(.el-select__wrapper) {
+  padding: 1px 15px;
+
+  span {
+    font-size: 14px;
+  }
 }
 </style>

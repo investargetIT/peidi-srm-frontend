@@ -59,6 +59,11 @@ export const getUserInfo = code => {
   );
 };
 
+// 获取基地信息
+export const getUserSite = () => {
+  return http.request("get", `https://user.peidigroup.cn/user/site`, {});
+};
+
 // 注册
 export const register = data => {
   return http.request(
@@ -80,13 +85,20 @@ export const sendCodeApi = data => {
   });
 };
 
-// 调用注册接口
+// 调用手机注册接口 -旧版
 export const registerApi = data => {
   return http.request("post", `https://user.peidigroup.cn/user/sms-register`, {
     data,
     headers: {
       PLATFORM: "srm"
     }
+  });
+};
+
+// 调用手机注册接口 -新版
+export const registerMobile = data => {
+  return http.request("post", `https://user.peidigroup.cn/user/sms-register`, {
+    data
   });
 };
 
