@@ -65,7 +65,7 @@ const onLogin = async (formEl: FormInstance | undefined) => {
         .loginByUsername({
           username: ruleForm.username,
           password: ruleForm.password,
-          site: ruleForm.site
+          site: ruleForm.site || null
         })
         .then(res => {
           if (res.success) {
