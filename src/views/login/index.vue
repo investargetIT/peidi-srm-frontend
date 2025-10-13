@@ -119,6 +119,7 @@ const ddLogin = () => {
           if (res.success) {
             const { data: ddUserInfo } = res;
             console.log("ddUserInfo", ddUserInfo);
+            localStorage.setItem("ddUserInfo", JSON.stringify(ddUserInfo));
             const { org_email, name, userid, mobile } = ddUserInfo;
             if (org_email) {
               console.log("ddEmail", org_email);
