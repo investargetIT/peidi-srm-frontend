@@ -158,6 +158,16 @@ const routes = [
         }
       }
     ]
+  },
+  {
+    path: "/login_",
+    name: "login_",
+    component: () => import("@/views/login/index_.vue"),
+    hidden: true,
+    meta: {
+      rank: 101,
+      showLink: false // 方式4：自定义hideInMenu属性
+    }
   }
 ];
 
@@ -217,7 +227,7 @@ export function resetRouter() {
 }
 
 /** 路由白名单 */
-const whiteList = ["/login"];
+const whiteList = ["/login", "/login_"];
 
 const { VITE_HIDE_HOME } = import.meta.env;
 

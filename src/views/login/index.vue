@@ -229,6 +229,11 @@ function onkeypress({ code }: KeyboardEvent) {
 }
 
 onMounted(() => {
+  // 不在钉钉环境下，跳转到新登录页
+  if (!navigator.userAgent.includes("DingTalk")) {
+    window.location.href = `${window.location.origin}/#/login_`;
+  }
+
   checkSourceParam();
   window.document.addEventListener("keypress", onkeypress);
 
