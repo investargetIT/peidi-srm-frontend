@@ -75,6 +75,17 @@ export const register = data => {
   );
 };
 
+// 修改用户密码
+export const updateUserPassword = data => {
+  return http.request(
+    "post",
+    `https://user.peidigroup.cn/user/update-password`,
+    {
+      data
+    }
+  );
+};
+
 // 发送验证码
 export const sendCodeApi = data => {
   return http.request("post", `https://user.peidigroup.cn/user/validate-code`, {

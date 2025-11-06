@@ -9,7 +9,12 @@ import LaySidebarTopCollapse from "../lay-sidebar/components/SidebarTopCollapse.
 
 import LogoutCircleRLine from "@iconify-icons/ri/logout-circle-r-line";
 import Setting from "@iconify-icons/ri/settings-3-line";
+import RiEditBoxLine from "@iconify-icons/ri/edit-box-line";
 import { emitter } from "@/utils/mitt.ts";
+import { computed, reactive, ref } from "vue";
+import { ElMessage } from "element-plus";
+import { storageLocal } from "@pureadmin/utils";
+import { updateUserPassword } from "../../../api/user";
 
 const {
   layout,
@@ -24,6 +29,77 @@ const {
 } = useNav();
 emitter.on("logout", () => {
   logout();
+});
+
+const showPasswordDialog = ref(false);
+const changePassword = () => {
+  showPasswordDialog.value = true;
+};
+const passwordFormRef = ref();
+const passwordForm = reactive({
+  oldPassword: "",
+  newPassword: "",
+  confirmPassword: ""
+});
+const validateConfirmPassword = (rule: any, value: any, callback: any) => {
+  if (value !== passwordForm.newPassword) {
+    callback(new Error("两次输入密码不一致"));
+  } else {
+    callback();
+  }
+};
+const passwordRules = reactive({
+  oldPassword: [
+    {
+      required: true,
+      message: "请输入旧密码",
+      trigger: "blur"
+    }
+  ],
+  // 新密码还需要和确认密码一致
+  newPassword: [
+    {
+      required: true,
+      message: "请输入新密码",
+      trigger: "blur"
+    }
+  ],
+  confirmPassword: [
+    { required: true, message: "请确认新密码", trigger: "blur" },
+    { required: true, validator: validateConfirmPassword, trigger: "blur" }
+  ]
+});
+const handlePasswordUpdate = () => {
+  passwordFormRef.value.validate((valid: any) => {
+    if (valid) {
+      console.log("passwordForm表单数据==", passwordForm);
+      if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        ElMessage.error(t("navbar.passwordNotMatch"));
+        return;
+      }
+      updateUserPassword({
+        identifier: (storageLocal().getItem("dataSource") as any)?.id,
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword
+      }).then((res: any) => {
+        if (res?.code === 200) {
+          ElMessage.success("修改密码成功");
+          passwordFormRef.value.resetFields();
+          showPasswordDialog.value = false;
+        } else {
+          ElMessage.error("修改密码失败" + res?.msg);
+        }
+      });
+    }
+  });
+};
+
+const isDingUser = computed(() => {
+  if (navigator.userAgent.includes("DingTalk")) return true;
+  const dataSource = JSON.parse(localStorage.getItem("dataSource") || "{}");
+  console.log("dataSource==", dataSource);
+  if (!!dataSource?.dingId) return true;
+  return false;
 });
 </script>
 
@@ -58,6 +134,10 @@ emitter.on("logout", () => {
         </span>
         <template #dropdown>
           <el-dropdown-menu class="logout">
+            <el-dropdown-item v-if="!isDingUser" @click="changePassword">
+              <IconifyIconOffline :icon="RiEditBoxLine" style="margin: 5px" />
+              修改密码
+            </el-dropdown-item>
             <el-dropdown-item @click="logout">
               <IconifyIconOffline
                 :icon="LogoutCircleRLine"
@@ -75,6 +155,50 @@ emitter.on("logout", () => {
       >
         <IconifyIconOffline :icon="Setting" />
       </span> -->
+
+      <el-dialog
+        v-model="showPasswordDialog"
+        :title="'修改密码'"
+        width="500"
+        @closed="passwordFormRef?.resetFields()"
+        :close-on-click-modal="false"
+      >
+        <el-form
+          :model="passwordForm"
+          :rules="passwordRules"
+          ref="passwordFormRef"
+          :label-width="'100px'"
+        >
+          <el-form-item :label="'旧密码'" prop="oldPassword">
+            <el-input
+              v-model="passwordForm.oldPassword"
+              type="password"
+              show-password
+            />
+          </el-form-item>
+          <el-form-item :label="'新密码'" prop="newPassword">
+            <el-input
+              v-model="passwordForm.newPassword"
+              type="password"
+              show-password
+            />
+          </el-form-item>
+          <el-form-item :label="'确认密码'" prop="confirmPassword">
+            <el-input
+              v-model="passwordForm.confirmPassword"
+              type="password"
+              show-password
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button type="primary" @click="handlePasswordUpdate">
+              确定
+            </el-button>
+          </div>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>

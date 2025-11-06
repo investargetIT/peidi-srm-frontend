@@ -77,6 +77,10 @@ onMounted(() => {
             token: res.data
           }).then(res => {
             if (res.success) {
+              // 如果dataSource不存在则刷新一次页面，因为有些权限在login组件加载前就已经判定
+              if (!localStorage.getItem("dataSource")) {
+                window.location.reload();
+              }
               localStorage.setItem("dataSource", JSON.stringify(res.data));
               // message("登录成功" + res.data.dataSource, { type: "success" });
             }
