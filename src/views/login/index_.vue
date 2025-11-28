@@ -105,14 +105,15 @@ onMounted(() => {
           });
         } else {
           message("登录失败", { type: "error" });
+          window.location.href = `https://login.peidigroup.cn/#/login?source=${encryptMessage(window.location.href)}`;
         }
       });
   } else {
     if (process.env.NODE_ENV === "development") {
       // window.location.href = `http://localhost:8848/#/login?source=${encryptMessage(window.location.href)}`;
-      window.location.href = `http://login.peidigroup.cn/#/login?source=${encryptMessage(window.location.href)}`;
+      window.location.href = `https://login.peidigroup.cn/#/login?source=${encryptMessage(window.location.href)}`;
     } else {
-      window.location.href = `http://login.peidigroup.cn/#/login?source=${encryptMessage(window.location.href)}`;
+      window.location.href = `https://login.peidigroup.cn/#/login?source=${encryptMessage(window.location.href)}`;
     }
   }
 });
