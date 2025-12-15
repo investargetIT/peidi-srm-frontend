@@ -37,18 +37,18 @@ const pdRules = {
     { required: true, message: "请选择管理等级分类", trigger: "change" }
   ],
   productName: [{ required: true, message: "请输入品名", trigger: "blur" }],
-  specification: [{ required: true, message: "请输入规格", trigger: "blur" }],
-  supplyAllYea: [
-    { required: true, message: "请输入常年正常供应", trigger: "blur" }
-  ],
-  enName: [{ required: true, message: "请输入英文名", trigger: "blur" }],
+  // specification: [{ required: true, message: "请输入规格", trigger: "blur" }],
+  // supplyAllYea: [
+  //   { required: true, message: "请输入常年正常供应", trigger: "blur" }
+  // ],
+  // enName: [{ required: true, message: "请输入英文名", trigger: "blur" }],
   referenceCost: [
-    { required: true, message: "请输入价格", trigger: "blur" },
+    // { required: true, message: "请输入价格", trigger: "blur" },
     {
       validator: (rule, value, callback) => {
         const regex =
           /^\+?(?!(?:0+(?:\.0+)?|\.0+$)(?:$|0+\.?0*$))(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
-        if (!regex.test(value)) {
+        if (!regex.test(value) && value !== "") {
           callback(new Error("价格必须大于0"));
         } else {
           callback();

@@ -692,6 +692,7 @@ const fetchMergeTreeData = async () => {
   if (curCatRes?.code) {
     curCatList = buildTree(curCatRes?.data || []);
   }
+  /** 使用缓存会导致新增的产品分类不会被展示，需要刷新页面才能看到
   // 缓存读取所有产品数据
   const curLocalProductData = expirableLocalStorage.getJSON("productList");
   // 检查本地缓存中是否存在产品列表数据
@@ -707,6 +708,12 @@ const fetchMergeTreeData = async () => {
       // 将新获取的数据存入本地缓存
       expirableLocalStorage.setJSON("productList", curProductRes?.data || []);
     }
+  }
+  */
+  const curProductRes = await fetchProductList({});
+  if (curCatRes?.code) {
+    // 将接口返回的数据转换为树形结构
+    curProductList = convertToTree(curProductRes?.data || []);
   }
   const mergedTree = mergeTreeData(curCatList, curProductList);
   allProductList.value = mergedTree;
