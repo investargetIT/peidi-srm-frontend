@@ -85,15 +85,15 @@ const supplierRules = {
   companyAddress: [
     { required: true, message: "输入公司地址", trigger: "blur" }
   ],
-  registrationInfo: [
-    { required: true, message: "输入注册信息", trigger: "blur" }
-  ],
+  // registrationInfo: [
+  //   { required: true, message: "输入注册信息", trigger: "blur" }
+  // ],
   supplierProduct: [
     { required: true, message: "输入供应产品", trigger: "blur" }
   ],
   bankAccount: [{ required: true, message: "输入银行账号", trigger: "blur" }],
   taxNumber: [{ required: true, message: "输入税号", trigger: "blur" }],
-  invoiceInfo: [{ required: true, message: "输入开票信息", trigger: "blur" }],
+  // invoiceInfo: [{ required: true, message: "输入开票信息", trigger: "blur" }],
   productInfo: [{ required: true, message: "请选择产品", trigger: "blur" }]
 };
 const dialogImageUrl = ref("");
@@ -1029,7 +1029,7 @@ fetchMergeTreeData();
         </el-row>
         <el-row :gutter="20">
           <el-col :span="24">
-            <el-form-item prop="invoiceInfo" label="开票信息">
+            <el-form-item prop="invoiceInfo" label="开户行">
               <el-input
                 type="text"
                 v-model="newSupplierData.invoiceInfo"
