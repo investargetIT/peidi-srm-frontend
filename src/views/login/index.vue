@@ -69,12 +69,12 @@ const onLogin = async (formEl: FormInstance | undefined) => {
           password: DINGTALK_LOGIN_FREE_DEFAULT_PASSWORD_ENCRYPTED,
           site: ruleForm.site || null
         })
-        .then(res => {
+        .then((res: any) => {
           if (res.success) {
             localStorage.setItem("token", res.data);
             getUserDataSourceApi({
               token: res.data
-            }).then(res => {
+            }).then((res: any) => {
               if (res.success) {
                 // 如果dataSource不存在则刷新一次页面，因为有些权限在login组件加载前就已经判定
                 if (!localStorage.getItem("dataSource")) {
@@ -86,19 +86,23 @@ const onLogin = async (formEl: FormInstance | undefined) => {
               // 获取后端路由
               return initRouter().then(() => {
                 // 获取一级分类数据
-                getAllCate({}).then(res => {
-                  if (res.success) {
-                    const level1Categories = res.data
-                      .filter(item => item.level === 1)
-                      .sort((a, b) => a.id - b.id);
-                    localStorage.setItem(
-                      "level1Categories",
-                      JSON.stringify(level1Categories)
-                    );
-                  }
-                  router.push(getTopMenu(true).path).then(() => {
-                    message("登录成功", { type: "success" });
-                  });
+                // getAllCate({}).then(res => {
+                //   if (res.success) {
+                //     const level1Categories = res.data
+                //       .filter(item => item.level === 1)
+                //       .sort((a, b) => a.id - b.id);
+                //     localStorage.setItem(
+                //       "level1Categories",
+                //       JSON.stringify(level1Categories)
+                //     );
+                //   }
+                //   router.push(getTopMenu(true).path).then(() => {
+                //     message("登录成功", { type: "success" });
+                //   });
+                // });
+
+                router.push(getTopMenu(true).path).then(() => {
+                  message("登录成功", { type: "success" });
                 });
               });
             });
@@ -114,13 +118,14 @@ const ddLogin = () => {
   let ddUserEmail = "";
   dd.runtime.permission.requestAuthCode({
     corpId: DINGTALK_CORP_ID, // 企业id
+    //@ts-ignore
     onSuccess: function (info) {
       console.log(info);
       const { code } = info;
 
       // 通过该免登授权码可以获取用户身份
       getUserInfo(code)
-        .then(res => {
+        .then((res: any) => {
           console.log(res);
           if (res.success) {
             const { data: ddUserInfo } = res;
@@ -167,7 +172,7 @@ const ddLogin = () => {
             message("用户注册失败：" + JSON.stringify(res), { type: "error" });
           }
         })
-        .then(res => {
+        .then((res: any) => {
           if (res) {
             // 获取当前用户信息来判断注册类型
             const ddUserInfo = JSON.parse(
@@ -205,7 +210,7 @@ const ddLogin = () => {
             }
           }
         })
-        .then(res => {
+        .then((res: any) => {
           if (res) {
             if (res.success) {
               localStorage.setItem("token", res.data);
@@ -213,7 +218,7 @@ const ddLogin = () => {
               const urlParams = new URL(window.location.href).searchParams;
               window.location.href = urlParams.get("redirect") || "/";
             } else {
-              setErrMsg("用户登录失败：" + JSON.stringify(res));
+              // setErrMsg("用户登录失败：" + JSON.stringify(res));
             }
           }
         });
@@ -244,7 +249,7 @@ onMounted(() => {
   window.document.addEventListener("keypress", onkeypress);
 
   // 获取基地信息
-  getUserSite().then(res => {
+  getUserSite().then((res: any) => {
     if (res.success) {
       const { data } = res;
       console.log("siteList", data);
