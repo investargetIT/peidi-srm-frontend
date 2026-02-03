@@ -231,7 +231,7 @@ function initRouter() {
           }))
         };
 
-        console.log("productFileRoute:", productFileRoute);
+        // console.log("productFileRoute:", productFileRoute);
 
         // 3. 合并固定路由和动态路由
         const routesTemp = [productFileRoute];

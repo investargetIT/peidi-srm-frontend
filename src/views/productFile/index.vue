@@ -13,7 +13,7 @@ import { ref, watch, computed, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import { message } from "@/utils/message";
 import { debounce, storageLocal } from "@pureadmin/utils";
-import { formatToken, getToken } from "@/utils/auth.ts";
+import { formatToken, getToken } from "@/utils/auth";
 import { buildTree } from "@/utils/common";
 
 defineOptions({
@@ -416,39 +416,43 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="container">
-    <div class="button-con absolute top-2 left-[60px] flex gap-2">
-      <el-select
-        v-model="searchInfo.categoryName"
-        style="width: 240px"
-        placeholder="请选择子分类"
-        filterable
-        clearable
-      >
-        <el-option
-          v-for="item in categoryNameList"
-          :label="item.categoryName"
-          :value="item.categoryName"
+  <div>
+    <div class="flex justify-between mb-[20px]">
+      <el-space>
+        <el-select
+          v-model="searchInfo.categoryName"
+          style="width: 240px"
+          placeholder="请选择子分类"
+          filterable
+          clearable
+        >
+          <el-option
+            v-for="item in categoryNameList"
+            :label="item.categoryName"
+            :value="item.categoryName"
+          />
+        </el-select>
+        <el-input
+          v-model="searchInfo.productName"
+          style="width: 240px"
+          placeholder="请输入品名"
         />
-      </el-select>
-      <el-input
-        v-model="searchInfo.productName"
-        style="width: 240px"
-        placeholder="请输入品名"
-      />
+      </el-space>
+      <div>
+        <el-button
+          type="primary"
+          size="large"
+          @click="
+            dialogFormVisible = true;
+            clearnewProdctData();
+          "
+        >
+          添加产品
+        </el-button>
+      </div>
     </div>
-    <el-button
-      class="addCate"
-      type="primary"
-      size="large"
-      @click="
-        dialogFormVisible = true;
-        clearnewProdctData();
-      "
-    >
-      添加产品
-    </el-button>
-    <el-table :data="currentPage" :row-class-name="addClass" style="width: 90%">
+
+    <el-table :data="currentPage" :row-class-name="addClass">
       <el-table-column fixed prop="materialCode" label="料号" />
       <el-table-column fixed prop="userInfo" label="信息维护人" />
       <el-table-column prop="parentCategoryName" label="主分类" />
@@ -490,16 +494,19 @@ watchEffect(() => {
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-      class="pagination"
-      v-model:current-page="currentPageNum"
-      @current-change="changeCurrentPage"
-      v-model:page-size="pageSize"
-      :page-sizes="pageSizeArr"
-      @size-change="handleSizeChange"
-      layout="total, sizes, prev, pager, next, jumper"
-      :total="total"
-    />
+
+    <div class="flex justify-center mt-[20px]">
+      <el-pagination
+        v-model:current-page="currentPageNum"
+        @current-change="changeCurrentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="pageSizeArr"
+        @size-change="handleSizeChange"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+      />
+    </div>
+
     <el-dialog
       v-model="dialogFormVisible"
       title="添加新产品"
@@ -850,31 +857,8 @@ watchEffect(() => {
   </div>
 </template>
 
-<style scoped>
-.container {
-  position: relative;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding-top: 54px;
-  margin: 0 !important;
-}
-
-.addCate {
-  position: absolute;
-  top: 4px;
-  right: 64px;
-}
-
-.pagination {
-  margin-top: 20px;
-}
-</style>
-
-<style>
-.disabled-row {
+<style lang="scss" scoped>
+:deep(.disabled-row) {
   color: #ccc;
   background-color: #f5f7fa;
 }

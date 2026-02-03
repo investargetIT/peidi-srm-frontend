@@ -805,39 +805,48 @@ fetchMergeTreeData();
 </script>
 
 <template>
-  <div class="container">
-    <div class="button-con absolute top-2 left-[60px] flex gap-2">
-      <el-input
-        v-model="searchInfo.supplierName"
-        style="width: 240px"
-        placeholder="请输入公司名称"
-      />
-      <el-input
-        v-model="searchInfo.supplierPerson"
-        style="width: 240px"
-        placeholder="请输入公司联系人"
-      />
+  <div>
+    <div class="flex justify-between mb-[20px]">
+      <el-space>
+        <el-input
+          v-model="searchInfo.supplierName"
+          style="width: 240px"
+          placeholder="请输入公司名称"
+        />
+        <el-input
+          v-model="searchInfo.supplierPerson"
+          style="width: 240px"
+          placeholder="请输入公司联系人"
+        />
+      </el-space>
+
+      <el-space>
+        <el-button
+          class="exportbtn"
+          type="primary"
+          size="large"
+          @click="exportOut"
+        >
+          导出所选供应商({{ selectedRowCount }})
+        </el-button>
+        <el-button
+          type="primary"
+          size="large"
+          @click="
+            dialogFormVisible = true;
+            openType = 'new';
+            clearnewSupplierData();
+          "
+        >
+          添加供应商
+        </el-button>
+      </el-space>
     </div>
-    <el-button class="exportbtn" type="primary" size="large" @click="exportOut">
-      导出所选供应商({{ selectedRowCount }})
-    </el-button>
-    <el-button
-      class="addCate"
-      type="primary"
-      size="large"
-      @click="
-        dialogFormVisible = true;
-        openType = 'new';
-        clearnewSupplierData();
-      "
-    >
-      添加供应商
-    </el-button>
+
     <el-table
       :data="currentPage"
       @selection-change="handleSelectionChange"
       :row-class-name="addClass"
-      style="width: 90%"
     >
       <el-table-column type="selection" width="55" />
       <el-table-column prop="companyName" label="公司名称" />
@@ -868,16 +877,20 @@ fetchMergeTreeData();
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-      class="pagination"
-      v-model:current-page="currentPageNum"
-      @current-change="changeCurrentPage"
-      v-model:page-size="pageSize"
-      :page-sizes="pageSizeArr"
-      @size-change="handleSizeChange"
-      layout="total, sizes, prev, pager, next, jumper"
-      :total="total"
-    />
+
+    <div class="mt-[20px] flex justify-center">
+      <el-pagination
+        class="pagination"
+        v-model:current-page="currentPageNum"
+        @current-change="changeCurrentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="pageSizeArr"
+        @size-change="handleSizeChange"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+      />
+    </div>
+
     <el-dialog
       v-model="dialogFormVisible"
       :title="openType == 'new' ? '添加新供应商' : '更新供应商'"
@@ -1103,37 +1116,8 @@ fetchMergeTreeData();
   </div>
 </template>
 
-<style scoped>
-.container {
-  position: relative;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding-top: 54px;
-  margin: 0 !important;
-}
-
-.addCate {
-  position: absolute;
-  top: 4px;
-  right: 64px;
-}
-
-.exportbtn {
-  position: absolute;
-  top: 4px;
-  right: 204px;
-}
-
-.pagination {
-  margin-top: 20px;
-}
-</style>
-
-<style>
-.disabled-row {
+<style lang="scss" scoped>
+:deep(.disabled-row) {
   color: #ccc;
   background-color: #f5f7fa;
 }
