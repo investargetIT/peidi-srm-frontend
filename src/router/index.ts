@@ -67,61 +67,61 @@ const routes = [
   //   }
   // ]
   // },
-  {
-    path: "/productFile",
-    name: "productFile",
-    component: Layout,
-    meta: {
-      icon: "prime:book",
-      title: "产品管理",
-      rank: 0
-    },
-    children: [
-      ...JSON.parse(localStorage.getItem("level1Categories") || "[]").map(
-        category => ({
-          path: `/productFile/${category.categoryCode}`,
-          name: `${category.categoryName}`,
-          component: () => import("@/views/productFile/index.vue"),
-          props: route => ({ categoryCode: route.params.categoryCode }),
-          meta: {
-            title: category.categoryName,
-            showParent: true
-          }
-        })
-      )
-    ]
-  },
-  {
-    path: "/quota",
-    name: "quota",
-    redirect: "/quota/index",
-    component: Layout,
-    meta: {
-      icon: "akar-icons:coin",
-      title: "报价管理",
-      rank: 0
-    },
-    children: [
-      {
-        path: "/quota/index",
-        name: "quota",
-        component: () => import("@/views/quota/index.vue"),
-        meta: {
-          title: "报价管理",
-          showParent: false
-        }
-      }
-    ]
-  },
+  // {
+  //   path: "/productFile",
+  //   name: "productFile",
+  //   component: Layout,
+  //   meta: {
+  //     icon: "prime:book",
+  //     title: "产品管理",
+  //     rank: 0
+  //   },
+  //   children: [
+  //     ...JSON.parse(localStorage.getItem("level1Categories") || "[]").map(
+  //       category => ({
+  //         path: `/productFile/${category.categoryCode}`,
+  //         name: `${category.categoryName}`,
+  //         component: () => import("@/views/productFile/index.vue"),
+  //         props: route => ({ categoryCode: route.params.categoryCode }),
+  //         meta: {
+  //           title: category.categoryName,
+  //           showParent: true
+  //         }
+  //       })
+  //     )
+  //   ]
+  // },
+  // {
+  //   path: "/quota",
+  //   name: "quota",
+  //   redirect: "/quota/index",
+  //   component: Layout,
+  //   meta: {
+  //     icon: "akar-icons:coin",
+  //     title: "报价管理",
+  //     rank: 0
+  //   },
+  //   children: [
+  //     {
+  //       path: "/quota/index",
+  //       name: "quota",
+  //       component: () => import("@/views/quota/index.vue"),
+  //       meta: {
+  //         title: "报价管理",
+  //         showParent: false
+  //       }
+  //     }
+  //   ]
+  // },
   {
     path: "/supplier",
-    name: "supplier",
+    name: "supplierLayout",
     redirect: "/supplier/index",
     component: Layout,
     meta: {
       icon: "flowbite:address-book-outline",
       title: "供应商管理",
-      rank: 0
+      rank: 11
     },
     children: [
       {
@@ -136,23 +136,46 @@ const routes = [
       }
     ]
   },
+  // {
+  //   path: "/yearSum",
+  //   name: "yearSum",
+  //   redirect: "/yearSum/index",
+  //   component: Layout,
+  //   meta: {
+  //     icon: "prime:book",
+  //     title: "年度采购汇总",
+  //     rank: 0
+  //   },
+  //   children: [
+  //     {
+  //       path: "/yearSum/index",
+  //       name: "yearSum",
+  //       component: () => import("@/views/yearSum/index.vue"),
+  //       meta: {
+  //         title: "年度采购汇总",
+  //         showParent: false,
+  //         icon: "prime:book"
+  //       }
+  //     }
+  //   ]
+  // },
   {
-    path: "/yearSum",
-    name: "yearSum",
-    redirect: "/yearSum/index",
+    path: "/productFileZc",
+    name: "productFileZcLayout",
+    redirect: "/productFileZc/index",
     component: Layout,
     meta: {
       icon: "prime:book",
-      title: "年度采购汇总",
-      rank: 0
+      title: "智创产品管理",
+      rank: 13
     },
     children: [
       {
-        path: "/yearSum/index",
-        name: "yearSum",
-        component: () => import("@/views/yearSum/index.vue"),
+        path: "/productFileZc/index",
+        name: "productFileZc",
+        component: () => import("@/views/productFileZc/index.vue"),
         meta: {
-          title: "年度采购汇总",
+          title: "智创产品管理",
           showParent: false,
           icon: "prime:book"
         }

@@ -70,12 +70,12 @@ onMounted(() => {
         password: userInfo?.password,
         site: userInfo?.site || null
       })
-      .then(res => {
+      .then((res: any) => {
         if (res.success) {
           localStorage.setItem("token", res.data);
           getUserDataSourceApi({
             token: res.data
-          }).then(res => {
+          }).then((res: any) => {
             if (res.success) {
               // 如果dataSource不存在则刷新一次页面，因为有些权限在login组件加载前就已经判定
               if (!localStorage.getItem("dataSource")) {
@@ -87,19 +87,22 @@ onMounted(() => {
             // 获取后端路由
             return initRouter().then(() => {
               // 获取一级分类数据
-              getAllCate({}).then(res => {
-                if (res.success) {
-                  const level1Categories = res.data
-                    .filter(item => item.level === 1)
-                    .sort((a, b) => a.id - b.id);
-                  localStorage.setItem(
-                    "level1Categories",
-                    JSON.stringify(level1Categories)
-                  );
-                }
-                router.push(getTopMenu(true).path).then(() => {
-                  message("登录成功", { type: "success" });
-                });
+              // getAllCate({}).then(res => {
+              //   if (res.success) {
+              //     const level1Categories = res.data
+              //       .filter(item => item.level === 1)
+              //       .sort((a, b) => a.id - b.id);
+              //     localStorage.setItem(
+              //       "level1Categories",
+              //       JSON.stringify(level1Categories)
+              //     );
+              //   }
+              //   router.push(getTopMenu(true).path).then(() => {
+              //     message("登录成功", { type: "success" });
+              //   });
+              // });
+              router.push(getTopMenu(true).path).then(() => {
+                message("登录成功", { type: "success" });
               });
             });
           });

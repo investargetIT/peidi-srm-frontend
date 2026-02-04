@@ -13,7 +13,7 @@ import { ref, watch, computed, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import { message } from "@/utils/message";
 import { debounce, storageLocal } from "@pureadmin/utils";
-import { formatToken, getToken } from "@/utils/auth.ts";
+import { formatToken, getToken } from "@/utils/auth";
 import { buildTree } from "@/utils/common";
 
 defineOptions({
@@ -87,7 +87,7 @@ const newProdctData = ref({
   // 单位 buchuan
   // 常年正常供应
   supplyAllYea: "",
-  unit: "公斤",
+  unit: "kg",
   enName: "",
   referenceCost: "",
   harvestSeason: null,
@@ -118,7 +118,7 @@ const getEnums = () => {
 
 const getAllCateFun = () => {
   getAllCate({}).then(res => {
-    console.log("res", res);
+    // console.log("res", res);
     if (res?.code) {
       allCateData.value = buildTree(res?.data || []);
     }
@@ -147,7 +147,9 @@ watch(dialogFormVisible, newVal => {
 });
 
 const getCurrentPage = () => {
-  const searchStr: any = [];
+  const searchStr: any = [
+    { searchName: "type", searchType: "equals", searchValue: `\"factory\"` }
+  ];
 
   Object.keys(searchInfo.value).forEach(key => {
     if (searchInfo.value[key]) {
@@ -163,7 +165,7 @@ const getCurrentPage = () => {
     pageSize: Number(pageSize.value),
     searchStr: JSON.stringify(searchStr)
   }).then(res => {
-    console.log("res", res);
+    // console.log("工厂产品列表:", res);
     if (res?.code) {
       currentPage.value = res?.data?.records || [];
       total.value = res?.data?.total;
@@ -194,13 +196,13 @@ const clearnewProdctData = () => {
     // 单位 buchuan
     // 常年正常供应
     supplyAllYea: "",
-    unit: "公斤",
+    unit: "kg",
     // 英文名
     enName: "",
     // 价格
     referenceCost: "",
     // 收获季节
-    harvestSeason: "",
+    harvestSeason: null,
     // 照片
     photoList: []
   };
@@ -222,6 +224,9 @@ const addCateData = async () => {
       });
       addPd({
         ...rest,
+        harvestSeason: !newProdctData.value.harvestSeason
+          ? null
+          : newProdctData.value.harvestSeason,
         photoList: imageList,
         userId: curUserId
       })
@@ -260,6 +265,9 @@ const updateCateData = async val => {
       });
       updatePd({
         ...rest,
+        harvestSeason: !newProdctData.value.harvestSeason
+          ? null
+          : newProdctData.value.harvestSeason,
         photoList: imageList
       })
         .then(res => {
@@ -349,11 +357,11 @@ const deleteCateFun = () => {
 };
 
 const changeCurrentPage = val => {
-  console.log("val", val);
+  // console.log("val", val);
 };
 
 watch([currentPageNum, pageSize], () => {
-  console.log("currentPageNum", currentPageNum.value);
+  // console.log("currentPageNum", currentPageNum.value);
   getCurrentPage();
 });
 
@@ -383,7 +391,7 @@ const handlePictureCardPreview = uploadFile => {
 };
 
 const handleFileChange = (file, files) => {
-  console.log("file,files", file, files);
+  // console.log("file,files", file, files);
 };
 
 const handleCategoryChange = val => {
@@ -410,45 +418,49 @@ watchEffect(() => {
     categoryNameList.value =
       allCateData.value.find(item => item.categoryName === route.name)
         ?.children || [];
-    console.log("categoryNameList", categoryNameList.value);
+    // console.log("categoryNameList", categoryNameList.value);
   }
 });
 </script>
 
 <template>
-  <div class="container">
-    <div class="button-con absolute top-2 left-[60px] flex gap-2">
-      <el-select
-        v-model="searchInfo.categoryName"
-        style="width: 240px"
-        placeholder="请选择子分类"
-        filterable
-        clearable
-      >
-        <el-option
-          v-for="item in categoryNameList"
-          :label="item.categoryName"
-          :value="item.categoryName"
+  <div>
+    <div class="flex justify-between mb-[20px]">
+      <el-space>
+        <el-select
+          v-model="searchInfo.categoryName"
+          style="width: 240px"
+          placeholder="请选择子分类"
+          filterable
+          clearable
+        >
+          <el-option
+            v-for="item in categoryNameList"
+            :label="item.categoryName"
+            :value="item.categoryName"
+          />
+        </el-select>
+        <el-input
+          v-model="searchInfo.productName"
+          style="width: 240px"
+          placeholder="请输入品名"
         />
-      </el-select>
-      <el-input
-        v-model="searchInfo.productName"
-        style="width: 240px"
-        placeholder="请输入品名"
-      />
+      </el-space>
+      <div>
+        <el-button
+          type="primary"
+          size="large"
+          @click="
+            dialogFormVisible = true;
+            clearnewProdctData();
+          "
+        >
+          添加产品
+        </el-button>
+      </div>
     </div>
-    <el-button
-      class="addCate"
-      type="primary"
-      size="large"
-      @click="
-        dialogFormVisible = true;
-        clearnewProdctData();
-      "
-    >
-      添加产品
-    </el-button>
-    <el-table :data="currentPage" :row-class-name="addClass" style="width: 90%">
+
+    <el-table :data="currentPage" :row-class-name="addClass">
       <el-table-column fixed prop="materialCode" label="料号" />
       <el-table-column fixed prop="userInfo" label="信息维护人" />
       <el-table-column prop="parentCategoryName" label="主分类" />
@@ -460,7 +472,7 @@ watchEffect(() => {
         label="单位"
         :formatter="
           () => {
-            return 'Kg';
+            return 'kg';
           }
         "
       />
@@ -477,12 +489,12 @@ watchEffect(() => {
             size="large"
             @click="openUpdatePop(scope)"
           >
-            更新
+            编辑
           </el-button>
           <el-button
             :disabled="scope.row.enable === false"
             link
-            type="primary"
+            type="danger"
             @click="deletePop(scope)"
             size="large"
             >删除</el-button
@@ -490,16 +502,19 @@ watchEffect(() => {
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-      class="pagination"
-      v-model:current-page="currentPageNum"
-      @current-change="changeCurrentPage"
-      v-model:page-size="pageSize"
-      :page-sizes="pageSizeArr"
-      @size-change="handleSizeChange"
-      layout="total, sizes, prev, pager, next, jumper"
-      :total="total"
-    />
+
+    <div class="flex justify-center mt-[20px]">
+      <el-pagination
+        v-model:current-page="currentPageNum"
+        @current-change="changeCurrentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="pageSizeArr"
+        @size-change="handleSizeChange"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+      />
+    </div>
+
     <el-dialog
       v-model="dialogFormVisible"
       title="添加新产品"
@@ -850,31 +865,8 @@ watchEffect(() => {
   </div>
 </template>
 
-<style scoped>
-.container {
-  position: relative;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding-top: 54px;
-  margin: 0 !important;
-}
-
-.addCate {
-  position: absolute;
-  top: 4px;
-  right: 64px;
-}
-
-.pagination {
-  margin-top: 20px;
-}
-</style>
-
-<style>
-.disabled-row {
+<style lang="scss" scoped>
+:deep(.disabled-row) {
   color: #ccc;
   background-color: #f5f7fa;
 }

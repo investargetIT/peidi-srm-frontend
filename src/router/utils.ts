@@ -28,6 +28,9 @@ const modulesRoutes = import.meta.glob("/src/views/**/*.{vue,tsx}");
 
 // 动态路由
 import { getAsyncRoutes } from "@/api/routes";
+import { getAllCate } from "@/api/user";
+
+const Layout = () => import("@/layout/index.vue");
 
 function handRank(routeInfo: any) {
   const { name, path, parentId, meta } = routeInfo;
@@ -191,59 +194,119 @@ function handleAsyncRoutes(routeList) {
 
 /** 初始化路由（`new Promise` 写法防止在异步请求中造成无限循环）*/
 function initRouter() {
-  // 固定路由
-  const permissionRouter = {
-    path: "/permission",
-    meta: {
-      title: "权限管理000",
-      icon: "ep:lollipop",
-      rank: 10
-    },
-    children: [
-      {
-        path: "/permission/page/index",
-        name: "PermissionPage",
-        meta: {
-          title: "页面权限",
-          roles: ["admin", "common"]
-        }
-      },
-      {
-        path: "/permission/button",
-        meta: {
-          title: "按钮权限",
-          roles: ["admin", "common"]
-        },
-        children: [
-          {
-            path: "/permission/button/router",
-            component: "permission/button/index",
-            name: "PermissionButtonRouter",
-            meta: {
-              title: "路由返回按钮权限",
-              auths: [
-                "permission:btn:add",
-                "permission:btn:edit",
-                "permission:btn:delete"
-              ]
-            }
+  return new Promise(async resolve => {
+    try {
+      // 1. 调用 getAllCate 接口获取一级分类数据
+      const res: any = await getAllCate({});
+      if (res.success) {
+        const level1Categories = res.data
+          .filter(item => item.level === 1)
+          .sort((a, b) => a.id - b.id);
+
+        // 将一级分类数据存储到 localStorage 中
+        localStorage.setItem(
+          "level1Categories",
+          JSON.stringify(level1Categories)
+        );
+
+        // 2. 动态生成 productFile 路由
+        const productFileRoute = {
+          path: "/productFile",
+          name: "productFileLayout",
+          component: Layout,
+          meta: {
+            icon: "prime:book",
+            title: "工厂产品管理",
+            rank: 12
           },
-          {
-            path: "/permission/button/login",
-            component: "permission/button/perms",
-            name: "PermissionButtonLogin",
+          children: level1Categories.map(category => ({
+            path: `/productFile/${category.categoryCode}`,
+            name: `${category.categoryName}`,
+            component: "/productFile/index.vue",
+            props: route => ({ categoryCode: route.params.categoryCode }),
             meta: {
-              title: "登录接口返回按钮权限"
+              title: category.categoryName,
+              showParent: true
             }
-          }
-        ]
+          }))
+        };
+
+        // console.log("productFileRoute:", productFileRoute);
+
+        // 3. 合并固定路由和动态路由
+        const routesTemp = [productFileRoute];
+
+        // 4. 处理路由并添加到 router 实例中
+        handleAsyncRoutes(routesTemp);
+      } else {
+        console.error("获取分类数据失败");
       }
-    ]
-  };
-  return new Promise(resolve => {
-    handleAsyncRoutes([permissionRouter]);
-    resolve(router);
+
+      // 5. 如果还有其他接口需要前置处理，可以在这里继续 await 其他异步操作
+      // 例如：
+      // const otherData = await getOtherApi();
+      // 处理 otherData 并生成其他路由...
+
+      resolve(router);
+    } catch (error) {
+      console.error("初始化路由时发生错误:", error);
+      resolve(router); // 即使出错也返回 router 实例
+    }
   });
+
+  // 固定路由
+  // const permissionRouter = {
+  //   path: "/permission",
+  //   meta: {
+  //     title: "权限管理000",
+  //     icon: "ep:lollipop",
+  //     rank: 10
+  //   },
+  //   children: [
+  //     {
+  //       path: "/permission/page/index",
+  //       name: "PermissionPage",
+  //       meta: {
+  //         title: "页面权限",
+  //         roles: ["admin", "common"]
+  //       }
+  //     },
+  //     {
+  //       path: "/permission/button",
+  //       meta: {
+  //         title: "按钮权限",
+  //         roles: ["admin", "common"]
+  //       },
+  //       children: [
+  //         {
+  //           path: "/permission/button/router",
+  //           component: "permission/button/index",
+  //           name: "PermissionButtonRouter",
+  //           meta: {
+  //             title: "路由返回按钮权限",
+  //             auths: [
+  //               "permission:btn:add",
+  //               "permission:btn:edit",
+  //               "permission:btn:delete"
+  //             ]
+  //           }
+  //         },
+  //         {
+  //           path: "/permission/button/login",
+  //           component: "permission/button/perms",
+  //           name: "PermissionButtonLogin",
+  //           meta: {
+  //             title: "登录接口返回按钮权限"
+  //           }
+  //         }
+  //       ]
+  //     }
+  //   ]
+  // };
+  // return new Promise(resolve => {
+  //   handleAsyncRoutes([permissionRouter]);
+  //   resolve(router);
+  // });
   // if (getConfig()?.CachingAsyncRoutes) {
   //   // 开启动态路由缓存本地localStorage
   //   const key = "async-routes";

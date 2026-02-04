@@ -41,7 +41,7 @@ const formRef = ref(null);
 const subFormRef = ref(null);
 const rules = ref({
   categoryName: [
-    { required: true, message: "Please input name", trigger: "blur" }
+    { required: true, message: "请输入分类名称", trigger: "blur" }
   ],
   categoryCode: [
     { required: true, message: "Please input code", trigger: "blur" }
@@ -274,29 +274,46 @@ watch([currentPageNum, pageSize], () => {
 </script>
 
 <template>
-  <div class="container">
-    <el-button
-      class="addCate"
-      type="primary"
-      size="large"
-      @click="
-        dialogFormVisible = true;
-        curLevel = 1;
-        clearNewCateData();
-      "
-    >
-      添加主分类
-    </el-button>
+  <div>
+    <div class="w-full flex justify-end mb-[20px]">
+      <el-button
+        type="primary"
+        size="large"
+        @click="
+          dialogFormVisible = true;
+          curLevel = 1;
+          clearNewCateData();
+        "
+      >
+        添加主分类
+      </el-button>
+    </div>
     <el-table
       :data="currentPage"
-      style="width: 90%; margin-bottom: 20px"
+      style="margin-bottom: 20px"
       border
       row-key="id"
       :tree-props="{ children: 'children' }"
     >
-      <el-table-column fixed prop="categoryName" label="主分类" width="250" />
-      <el-table-column prop="categoryCode" label="编码" width="220" />
-      <el-table-column fixed="right" label="操作" min-width="120">
+      <el-table-column
+        fixed
+        prop="categoryName"
+        label="主分类"
+        width="250"
+        :resizable="false"
+      />
+      <el-table-column
+        prop="categoryCode"
+        label="编码"
+        width="220"
+        :resizable="false"
+      />
+      <el-table-column
+        fixed="right"
+        label="操作"
+        min-width="120"
+        :resizable="false"
+      >
         <template #default="scope">
           <el-button
             link
@@ -304,11 +321,11 @@ watch([currentPageNum, pageSize], () => {
             size="large"
             @click.stop="openUpdatePop(scope)"
           >
-            更新
+            编辑
           </el-button>
           <el-button
             link
-            type="primary"
+            type="danger"
             @click.stop="deletePop(scope)"
             size="large"
             >删除</el-button
@@ -324,15 +341,18 @@ watch([currentPageNum, pageSize], () => {
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-      class="pagination"
-      v-model:current-page="currentPageNum"
-      @current-change="changeCurrentPage"
-      v-model:page-size="pageSize"
-      @size-change="handleSizeChange"
-      layout="total,  prev,  next"
-      :total="total"
-    />
+
+    <div class="flex justify-center mt-[20px]">
+      <el-pagination
+        v-model:current-page="currentPageNum"
+        @current-change="changeCurrentPage"
+        v-model:page-size="pageSize"
+        @size-change="handleSizeChange"
+        layout="total,  prev, pager, next"
+        :total="total"
+      />
+    </div>
+
     <el-dialog
       v-model="dialogFormVisible"
       :title="curLevel === 1 ? '添加主分类' : '添加子分类'"
@@ -500,26 +520,3 @@ watch([currentPageNum, pageSize], () => {
     </el-dialog>
   </div>
 </template>
-
-<style scoped>
-.container {
-  position: relative;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding-top: 54px;
-  margin: 0 !important;
-}
-
-.addCate {
-  position: absolute;
-  top: 4px;
-  right: 64px;
-}
-
-.pagination {
-  margin-top: 20px;
-}
-</style>

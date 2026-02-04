@@ -324,3 +324,10 @@ export const fetchProductList = params => {
     params
   });
 };
+
+// 获取单品列表商品
+export const getSpecGoodsList = params => {
+  return http.request("get", "https://api.peidigroup.cn/oms/orders/specGoods", {
+    params
+  });
+};
