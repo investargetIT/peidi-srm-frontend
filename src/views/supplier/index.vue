@@ -32,7 +32,7 @@ const currentPage = ref([]);
 const emptyCate = ref<number[]>([]);
 const enums = ref([]);
 const pageSizeArr = ref([5, 10, 15, 20]);
-const pageSize = ref(pageSizeArr.value[3]);
+const pageSize = ref(pageSizeArr.value[2]);
 const total = ref(0);
 const currentPageNum = ref(1);
 const dialogFormVisible = ref(false);
@@ -97,9 +97,9 @@ const supplierRules = {
     { required: true, message: "输入供应产品", trigger: "blur" }
   ],
   bankAccount: [{ required: true, message: "输入银行账号", trigger: "blur" }],
-  taxNumber: [{ required: true, message: "输入税号", trigger: "blur" }],
+  taxNumber: [{ required: true, message: "输入税号", trigger: "blur" }]
   // invoiceInfo: [{ required: true, message: "输入开票信息", trigger: "blur" }],
-  productInfo: [{ required: true, message: "请选择产品", trigger: "blur" }]
+  // productInfo: [{ required: true, message: "请选择产品", trigger: "blur" }]
 };
 const dialogImageUrl = ref("");
 const dialogVisible = ref(false);
@@ -525,9 +525,13 @@ const openUpdatePop = val => {
     // 构建级联选择器的值
     // console.log("级联选择器的值:", res);
     const resFactory = res.filter(
-      item => item?.data?.parentCategoryId !== null
+      item =>
+        item?.data?.parentCategoryId !== null && item?.data?.enable === true
     );
-    const resPdzc = res.filter(item => item?.data?.parentCategoryId === null);
+    const resPdzc = res.filter(
+      item =>
+        item?.data?.parentCategoryId === null && item?.data?.enable === true
+    );
 
     const cascaderValue = resFactory
       .map(item => {
@@ -941,6 +945,140 @@ watch(
 getCurrentPage();
 getEnums();
 fetchMergeTreeData();
+
+const exportAll = async () => {
+  try {
+    message("正在导出全部数据，请稍候...", { type: "info" });
+
+    // 构建搜索条件
+    const searchStr: any = [];
+    if (searchInfo.value.supplierName) {
+      searchStr.push({
+        searchName: "companyName",
+        searchType: "like",
+        searchValue: searchInfo.value.supplierName
+      });
+    }
+    if (searchInfo.value.supplierPerson) {
+      searchStr.push({
+        searchName: "contactInfo",
+        searchType: "like",
+        searchValue: searchInfo.value.supplierPerson
+      });
+    }
+
+    // 获取总数据量
+    const totalCountResponse = await getPageSupplier({
+      pageNo: 1,
+      pageSize: 1,
+      searchStr: JSON.stringify(searchStr)
+    });
+
+    const totalRecords = totalCountResponse?.data?.total || 0;
+    if (totalRecords === 0) {
+      message("没有数据可以导出", { type: "warning" });
+      return;
+    }
+
+    // 分批获取所有数据
+    const allData = [];
+    const batchSize = 1000; // 每次获取1000条数据
+    const totalPages = Math.ceil(totalRecords / batchSize);
+
+    for (let page = 1; page <= totalPages; page++) {
+      const response = await getPageSupplier({
+        pageNo: page,
+        pageSize: batchSize,
+        searchStr: JSON.stringify(searchStr)
+      });
+
+      if (response?.data?.records) {
+        allData.push(...response.data.records);
+      }
+
+      // 显示进度
+      // const progress = Math.round((page / totalPages) * 100);
+      // message(`导出进度: ${progress}% (${page}/${totalPages})`, {
+      //   type: "info"
+      // });
+    }
+
+    // 处理数据格式
+    const processedData = allData.map(item => {
+      // 处理联系人和联系方式
+      let contactInfoPerson = [];
+      let contactInfoWay = [];
+      try {
+        const contactInfo = JSON.parse(item.contactInfo);
+        contactInfo.forEach(info => {
+          contactInfoPerson.push(info.person);
+          contactInfoWay.push(info.info);
+        });
+      } catch (e) {
+        console.warn("解析联系信息失败:", e);
+      }
+
+      return {
+        companyName: item.companyName || "",
+        companyAddress: item.companyAddress || "",
+        contactInfoWay: contactInfoWay.join(","),
+        contactInfoPerson: contactInfoPerson.join(","),
+        supplierGradeName: item.supplierGradeName || "",
+        supplierProductName: (item.supplierProductName || []).join(",")
+      };
+    });
+
+    // 准备导出数据
+    const exportData = [
+      ["公司名称", "地址", "联系方式", "联系人", "供应商类型", "供应产品"]
+    ];
+
+    processedData.forEach(item => {
+      exportData.push([
+        item.companyName,
+        item.companyAddress,
+        item.contactInfoWay,
+        item.contactInfoPerson,
+        item.supplierGradeName,
+        item.supplierProductName
+      ]);
+    });
+
+    // 创建 Workbook 对象
+    const workbook = XLSX.utils.book_new();
+
+    // 创建 Worksheet 对象
+    const worksheet = XLSX.utils.aoa_to_sheet(exportData);
+
+    // 设置列宽
+    const colWidths = [
+      { wch: 25 }, // 公司名称
+      { wch: 30 }, // 地址
+      { wch: 20 }, // 联系方式
+      { wch: 15 }, // 联系人
+      { wch: 15 }, // 供应商类型
+      { wch: 40 } // 供应产品
+    ];
+    worksheet["!cols"] = colWidths;
+
+    // 将 Worksheet 添加到 Workbook 中
+    XLSX.utils.book_append_sheet(workbook, worksheet, "供应商数据");
+
+    // 生成文件名包含时间戳
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+    const fileName = `供应商数据_${timestamp}.xlsx`;
+
+    // 生成 Excel 文件并下载
+    XLSX.writeFile(workbook, fileName);
+
+    message(`导出完成！共导出 ${processedData.length} 条记录`, {
+      type: "success"
+    });
+  } catch (error) {
+    console.error("导出失败:", error);
+    message("导出失败: " + error.message, { type: "error" });
+  }
+};
 </script>
 
 <template>
@@ -962,11 +1100,19 @@ fetchMergeTreeData();
       <el-space>
         <el-button
           class="exportbtn"
-          type="primary"
+          color="#217346"
           size="large"
           @click="exportOut"
         >
           导出所选供应商({{ selectedRowCount }})
+        </el-button>
+        <el-button
+          class="export-all-btn"
+          color="#217346"
+          size="large"
+          @click="exportAll"
+        >
+          导出全部供应商
         </el-button>
         <el-button
           type="primary"
@@ -986,6 +1132,8 @@ fetchMergeTreeData();
       :data="currentPage"
       @selection-change="handleSelectionChange"
       :row-class-name="addClass"
+      :header-cell-style="{ color: '#0a0a0a' }"
+      size="small"
     >
       <el-table-column type="selection" width="55" />
       <el-table-column prop="companyName" label="公司名称" />
@@ -993,8 +1141,25 @@ fetchMergeTreeData();
       <el-table-column prop="contactInfoWay" label="联系方式" />
       <el-table-column prop="contactInfoPerson" label="联系人" />
       <el-table-column prop="supplierGradeName" label="供应商类型" />
-      <el-table-column prop="supplierProductName" label="供应产品" />
-      <el-table-column fixed="right" label="操作" min-width="120">
+      <el-table-column prop="supplierProductName" label="供应产品">
+        <template #default="scope">
+          <div class="peidi-product-text-container">
+            <el-tooltip
+              v-for="(item, index) in scope.row.supplierProductName"
+              :key="index"
+              :content="item"
+              placement="top"
+              :disabled="item.length <= 20"
+              :show-after="100"
+            >
+              <span class="peidi-product-item">
+                {{ item.length > 20 ? `${item.slice(0, 20)}...` : item }}
+              </span>
+            </el-tooltip>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column fixed="right" label="操作" width="125">
         <template #default="scope">
           <el-button
             :disabled="scope.row.enable === false"
@@ -1153,8 +1318,9 @@ fetchMergeTreeData();
                   multiple: true
                 }"
                 :options="allProductList"
-                placeholder="请选择产品"
+                placeholder=" "
                 v-model="newSupplierData.productInfo"
+                disabled
               />
             </el-form-item>
           </el-col>
@@ -1300,5 +1466,28 @@ fetchMergeTreeData();
 :deep(.disabled-row) {
   color: #ccc;
   background-color: #f5f7fa;
+}
+
+.peidi-product-text-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px; /* 控制每项之间的间距 */
+  line-height: 1.5;
+}
+
+.peidi-product-item {
+  display: inline-block;
+  max-width: 150px; /* 单个项目的最大宽度 */
+  overflow: hidden;
+  font-size: 12px;
+  color: #606266;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer; /* 提示用户可悬停 */
+  border-bottom: 1px dashed #dcdfe6; /* 添加下划线增强视觉效果 */
+
+  &:hover {
+    color: #409eff; /* 悬停时变色 */
+  }
 }
 </style>

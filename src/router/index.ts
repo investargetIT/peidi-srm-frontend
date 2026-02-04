@@ -173,7 +173,7 @@ const routes = [
       {
         path: "/productFileZc/index",
         name: "productFileZc",
-        component: () => import("@/views/productFileZc/index.vue"),
+        component: () => import("@/views/productFilePdzc/index.vue"),
         meta: {
           title: "智创产品管理",
           showParent: false,

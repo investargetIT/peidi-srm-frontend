@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive, ref, nextTick } from "vue";
+import { useRouter } from "vue-router";
 import { FormInstance } from "element-plus";
 import { message } from "@/utils/message";
+
+const router = useRouter();
 
 const props = defineProps({
   addCateData: {
@@ -39,10 +42,7 @@ const ruleForm = reactive({
 });
 
 const rules = {
-  productName: [
-    { required: true, message: "请输入品名", trigger: "change" },
-    { required: true, message: "请输入品名", trigger: "blur" }
-  ]
+  materialCode: [{ required: true, message: "请选择料号", trigger: "change" }]
 };
 
 const beforeClose = (done: () => void) => {
@@ -97,6 +97,10 @@ const canModifyPrice = computed(() => (supplierId: number | string) => {
   return true;
 });
 
+const handleAddSupplier = () => {
+  router.push({ name: "supplier" });
+};
+
 defineExpose({ initDialog });
 </script>
 
@@ -128,19 +132,25 @@ defineExpose({ initDialog });
 
         <!-- 供应商 -->
         <el-form-item label="供应商" prop="supplierName">
-          <el-select
-            v-model="ruleForm.supplierId"
-            placeholder="请选择供应商"
-            clearable
-            filterable
-          >
-            <el-option
-              v-for="item in props.supplierList"
-              :key="item.id"
-              :label="item.companyName"
-              :value="item.id"
-            />
-          </el-select>
+          <el-space>
+            <el-select
+              v-model="ruleForm.supplierId"
+              placeholder="请选择供应商"
+              clearable
+              filterable
+              style="width: 345px"
+            >
+              <el-option
+                v-for="item in props.supplierList"
+                :key="item.id"
+                :label="item.companyName"
+                :value="item.id"
+              />
+            </el-select>
+            <el-button type="primary" size="default" @click="handleAddSupplier">
+              <el-icon><Plus /></el-icon>
+            </el-button>
+          </el-space>
         </el-form-item>
 
         <!-- 料号 -->
@@ -148,7 +158,6 @@ defineExpose({ initDialog });
           <el-select
             v-model="ruleForm.materialCode"
             placeholder="请选择料号（自动匹配品名和条码）"
-            clearable
             filterable
             @change="handleMaterialCodeChange"
           >
@@ -163,7 +172,7 @@ defineExpose({ initDialog });
 
         <!-- 品名 -->
         <el-form-item label="品名" prop="productName">
-          <el-input v-model="ruleForm.productName" />
+          <el-input v-model="ruleForm.productName" disabled />
         </el-form-item>
 
         <!-- 规格 -->
@@ -173,7 +182,7 @@ defineExpose({ initDialog });
 
         <!-- 条码 -->
         <el-form-item label="条码" prop="barcode">
-          <el-input v-model="ruleForm.barcode" />
+          <el-input v-model="ruleForm.barcode" disabled />
         </el-form-item>
 
         <!-- 单位 -->

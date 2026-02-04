@@ -129,13 +129,15 @@ const handleSizeChange = (val: number) => {
   pageSize.value = val;
 };
 
+const debouncedGetCurrentPage = debounce(() => {
+  getCurrentPage();
+}, 500);
+
 // searchInfo变动时重新获取数据，但是不能调用搜索太频繁了
 watch(
   [searchInfo],
   () => {
-    debounce(() => {
-      getCurrentPage();
-    }, 500)();
+    debouncedGetCurrentPage();
   },
   { deep: true }
 );
@@ -444,6 +446,7 @@ watchEffect(() => {
           v-model="searchInfo.productName"
           style="width: 240px"
           placeholder="请输入品名"
+          clearable
         />
       </el-space>
       <div>
@@ -460,7 +463,12 @@ watchEffect(() => {
       </div>
     </div>
 
-    <el-table :data="currentPage" :row-class-name="addClass">
+    <el-table
+      :data="currentPage"
+      :row-class-name="addClass"
+      :header-cell-style="{ color: '#0a0a0a' }"
+      size="small"
+    >
       <el-table-column fixed prop="materialCode" label="料号" />
       <el-table-column fixed prop="userInfo" label="信息维护人" />
       <el-table-column prop="parentCategoryName" label="主分类" />
@@ -480,7 +488,7 @@ watchEffect(() => {
       <el-table-column prop="lastQuoteDate" label="最近一次报价时间" />
       <el-table-column prop="supplyAllYea" label="常年正常供应" />
       <el-table-column prop="supplierName" label="品牌" />
-      <el-table-column fixed="right" label="操作" min-width="120">
+      <el-table-column fixed="right" label="操作" width="125">
         <template #default="scope">
           <el-button
             :disabled="scope.row.enable === false"

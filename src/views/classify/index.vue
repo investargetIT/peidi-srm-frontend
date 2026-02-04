@@ -294,6 +294,7 @@ watch([currentPageNum, pageSize], () => {
       border
       row-key="id"
       :tree-props="{ children: 'children' }"
+      :header-cell-style="{ color: '#0a0a0a' }"
     >
       <el-table-column
         fixed

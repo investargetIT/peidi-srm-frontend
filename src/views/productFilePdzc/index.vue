@@ -22,7 +22,8 @@ const addClass = ({ row }) => {
 };
 
 const searchInfo = ref({
-  materialCode: ""
+  materialCode: "",
+  supplierId: ""
 });
 
 const currentPage = ref([
@@ -76,7 +77,8 @@ const fetchSpecGoodsList = () => {
 
 const getCurrentPage = () => {
   const searchStr: any = [
-    { searchName: "type", searchType: "equals", searchValue: `\"pdzc\"` }
+    { searchName: "type", searchType: "equals", searchValue: `\"pdzc\"` },
+    { searchName: "enable", searchType: "equals", searchValue: `true` }
   ];
   Object.keys(searchInfo.value).forEach(key => {
     if (searchInfo.value[key]) {
@@ -91,7 +93,8 @@ const getCurrentPage = () => {
   return getPagePd({
     pageNo: paginationConfig.value.currentPageNum,
     pageSize: paginationConfig.value.pageSize,
-    searchStr: JSON.stringify(searchStr)
+    searchStr: JSON.stringify(searchStr),
+    sortStr: JSON.stringify([{ sortName: "id", sortType: "desc" }])
   })
     .then((res: any) => {
       // console.log("智创产品列表：", res);
@@ -241,11 +244,27 @@ watch(
   <div>
     <div class="flex justify-between mb-[20px]">
       <el-space>
+        <el-select
+          v-model="searchInfo.supplierId"
+          style="width: 240px"
+          placeholder="请选择供应商"
+          :disabled="loading"
+          filterable
+          clearable
+        >
+          <el-option
+            v-for="item in supplierList"
+            :key="item.id"
+            :label="item.companyName"
+            :value="item.id"
+          />
+        </el-select>
         <el-input
           v-model="searchInfo.materialCode"
           style="width: 240px"
           placeholder="请输入料号"
           :disabled="loading"
+          clearable
         />
       </el-space>
       <div>
@@ -265,6 +284,8 @@ watch(
       :row-class-name="addClass"
       v-loading="loading"
       element-loading-text="加载中..."
+      :header-cell-style="{ color: '#0a0a0a' }"
+      size="small"
     >
       <el-table-column prop="businessDate" label="业务日期" />
       <el-table-column prop="supplierId" label="供应商">
@@ -282,7 +303,7 @@ watch(
       <el-table-column prop="unit" label="单位" />
       <el-table-column prop="referenceCost" label="价格" />
 
-      <el-table-column fixed="right" label="操作" min-width="120">
+      <el-table-column fixed="right" label="操作" width="125">
         <template #default="scope">
           <el-button
             :disabled="scope.row.enable === false"
