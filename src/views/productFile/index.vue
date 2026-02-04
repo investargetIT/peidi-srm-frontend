@@ -87,7 +87,7 @@ const newProdctData = ref({
   // 单位 buchuan
   // 常年正常供应
   supplyAllYea: "",
-  unit: "公斤",
+  unit: "kg",
   enName: "",
   referenceCost: "",
   harvestSeason: null,
@@ -118,7 +118,7 @@ const getEnums = () => {
 
 const getAllCateFun = () => {
   getAllCate({}).then(res => {
-    console.log("res", res);
+    // console.log("res", res);
     if (res?.code) {
       allCateData.value = buildTree(res?.data || []);
     }
@@ -147,7 +147,9 @@ watch(dialogFormVisible, newVal => {
 });
 
 const getCurrentPage = () => {
-  const searchStr: any = [];
+  const searchStr: any = [
+    { searchName: "type", searchType: "equals", searchValue: `\"factory\"` }
+  ];
 
   Object.keys(searchInfo.value).forEach(key => {
     if (searchInfo.value[key]) {
@@ -163,7 +165,7 @@ const getCurrentPage = () => {
     pageSize: Number(pageSize.value),
     searchStr: JSON.stringify(searchStr)
   }).then(res => {
-    console.log("res", res);
+    // console.log("工厂产品列表:", res);
     if (res?.code) {
       currentPage.value = res?.data?.records || [];
       total.value = res?.data?.total;
@@ -194,13 +196,13 @@ const clearnewProdctData = () => {
     // 单位 buchuan
     // 常年正常供应
     supplyAllYea: "",
-    unit: "公斤",
+    unit: "kg",
     // 英文名
     enName: "",
     // 价格
     referenceCost: "",
     // 收获季节
-    harvestSeason: "",
+    harvestSeason: null,
     // 照片
     photoList: []
   };
@@ -222,6 +224,9 @@ const addCateData = async () => {
       });
       addPd({
         ...rest,
+        harvestSeason: !newProdctData.value.harvestSeason
+          ? null
+          : newProdctData.value.harvestSeason,
         photoList: imageList,
         userId: curUserId
       })
@@ -260,6 +265,9 @@ const updateCateData = async val => {
       });
       updatePd({
         ...rest,
+        harvestSeason: !newProdctData.value.harvestSeason
+          ? null
+          : newProdctData.value.harvestSeason,
         photoList: imageList
       })
         .then(res => {
@@ -349,11 +357,11 @@ const deleteCateFun = () => {
 };
 
 const changeCurrentPage = val => {
-  console.log("val", val);
+  // console.log("val", val);
 };
 
 watch([currentPageNum, pageSize], () => {
-  console.log("currentPageNum", currentPageNum.value);
+  // console.log("currentPageNum", currentPageNum.value);
   getCurrentPage();
 });
 
@@ -383,7 +391,7 @@ const handlePictureCardPreview = uploadFile => {
 };
 
 const handleFileChange = (file, files) => {
-  console.log("file,files", file, files);
+  // console.log("file,files", file, files);
 };
 
 const handleCategoryChange = val => {
@@ -410,7 +418,7 @@ watchEffect(() => {
     categoryNameList.value =
       allCateData.value.find(item => item.categoryName === route.name)
         ?.children || [];
-    console.log("categoryNameList", categoryNameList.value);
+    // console.log("categoryNameList", categoryNameList.value);
   }
 });
 </script>
@@ -464,7 +472,7 @@ watchEffect(() => {
         label="单位"
         :formatter="
           () => {
-            return 'Kg';
+            return 'kg';
           }
         "
       />
@@ -481,12 +489,12 @@ watchEffect(() => {
             size="large"
             @click="openUpdatePop(scope)"
           >
-            更新
+            编辑
           </el-button>
           <el-button
             :disabled="scope.row.enable === false"
             link
-            type="primary"
+            type="danger"
             @click="deletePop(scope)"
             size="large"
             >删除</el-button

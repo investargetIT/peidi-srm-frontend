@@ -1,27 +1,19 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { addPd, deletePd, getPagePd, updatePd } from "@/api/user";
+import {
+  addPd,
+  deletePd,
+  getPagePd,
+  updatePd,
+  getPageSupplier,
+  getSpecGoodsList
+} from "@/api/user";
 import { message } from "@/utils/message";
 import DetailDialog from "./detailDialog.vue";
+import { debounce } from "@pureadmin/utils";
 
-const searchInfo = ref({
-  materialCode: ""
-});
-
-const currentPage = ref([
-  {
-    id: 1000000000,
-    lastQuoteDate: "2023-10-01", // 业务日期
-    supplierName: "深圳市XX电子有限公司", // 供应商
-    materialCode: "MAT123456", // 料号
-    productName: "碳膜电阻", // 品名
-    specification: "1/4W 100Ω ±5%", // 规格
-    barcode: "BAR123456789", // 条码
-    unit: "个", // 单位
-    referenceCost: "0.50" // 价格
-  }
-]);
+const loading = ref(false);
 
 const addClass = ({ row }) => {
   if (row.enable === false) {
@@ -29,27 +21,100 @@ const addClass = ({ row }) => {
   }
 };
 
+const searchInfo = ref({
+  materialCode: ""
+});
+
+const currentPage = ref([
+  // {
+  //   id: 1000000000,
+  //   businessDate: "2023-10-01", // 业务日期
+  //   supplierId: "深圳市XX电子有限公司", // 供应商
+  //   materialCode: "MAT123456", // 料号
+  //   productName: "碳膜电阻", // 品名
+  //   specification: "1/4W 100Ω ±5%", // 规格
+  //   barcode: "BAR123456789", // 条码
+  //   unit: "个", // 单位
+  //   referenceCost: "0.50" // 价格
+  // }
+]);
+
 const paginationConfig = ref({
   currentPageNum: 1,
-  pageSize: 10,
-  pageSizeArr: [10, 20, 30, 40, 50],
+  pageSize: 20,
+  pageSizeArr: [5, 10, 15, 20],
   total: 0
 });
 
+const supplierList = ref([]);
+const specGoodsList = ref([]);
+
 //#region 请求相关
-const getCurrentPage = () => {
-  const searchStr: any = [];
-  getPagePd({
+
+// 供应商列表
+const fetchSupplierList = () => {
+  return getPageSupplier({
     pageNo: 1,
-    pageSize: 11
-  }).then(res => {
-    console.log("智创产品列表：", res);
+    pageSize: 10e3
+  }).then((res: any) => {
+    // console.log("供应商列表：", res);
+    supplierList.value = res.data.records || [];
   });
 };
 
+// 获取料号
+const fetchSpecGoodsList = () => {
+  return getSpecGoodsList({
+    searchStr: JSON.stringify([
+      { searchName: "u9No", searchType: "like", searchValue: "." }
+    ])
+  }).then((res: any) => {
+    // console.log("料号表：", res.data);
+    specGoodsList.value = res.data.filter(item => item.u9No !== "") || [];
+  });
+};
+
+const getCurrentPage = () => {
+  const searchStr: any = [
+    { searchName: "type", searchType: "equals", searchValue: `\"pdzc\"` }
+  ];
+  Object.keys(searchInfo.value).forEach(key => {
+    if (searchInfo.value[key]) {
+      searchStr.push({
+        searchName: key,
+        searchType: "like",
+        searchValue: searchInfo.value[key]
+      });
+    }
+  });
+
+  return getPagePd({
+    pageNo: paginationConfig.value.currentPageNum,
+    pageSize: paginationConfig.value.pageSize,
+    searchStr: JSON.stringify(searchStr)
+  })
+    .then((res: any) => {
+      // console.log("智创产品列表：", res);
+
+      // 如果当前页大于总页数，重置为最后一页 排除总页数为0的情况
+      if (res.data?.current > res.data?.pages && res.data?.total !== 0) {
+        paginationConfig.value.currentPageNum = res.data?.pages;
+        return;
+      }
+
+      // 更新总页数
+      paginationConfig.value.total = res.data?.total || 0;
+
+      currentPage.value = res.data.records || [];
+    })
+    .catch(err => {
+      message("获取智创产品列表失败:" + err.message, { type: "error" });
+    });
+};
+
 const deleteCateFun = id => {
-  message("已删除 产品id：" + id);
-  return;
+  // message("已删除 产品id：" + id);
+  // return;
   deletePd({ id })
     .then((res: any) => {
       const { code, data, msg } = res;
@@ -65,14 +130,19 @@ const deleteCateFun = id => {
     });
 };
 
-const addCateData = () => {
-  message("调用添加接口");
-  return;
-  addPd({})
+const addCateData = (data: any, callback?: () => void) => {
+  // message("调用添加接口");
+  console.log("添加数据:", data);
+  // return;
+  addPd({
+    ...data,
+    type: "pdzc"
+  })
     .then((res: any) => {
       const { code, data, msg } = res;
       if (res.code == 200) {
         message("添加产品成功", { type: "success" });
+        if (callback) callback();
         getCurrentPage();
       } else {
         message("添加产品失败:" + msg, { type: "error" });
@@ -83,14 +153,18 @@ const addCateData = () => {
     });
 };
 
-const updateCateData = (formData: any) => {
-  message("调用更新接口");
-  return;
-  updatePd({})
+const updateCateData = (data: any, callback?: () => void) => {
+  // message("调用更新接口");
+  console.log("更新数据:", data);
+  // return;
+  updatePd({
+    ...data
+  })
     .then((res: any) => {
       const { code, data, msg } = res;
       if (res.code == 200) {
         message("更新产品成功", { type: "success" });
+        if (callback) callback();
         getCurrentPage();
       } else {
         message("更新产品失败:" + msg, { type: "error" });
@@ -131,9 +205,34 @@ const handleUpdateClick = row => {
   detailDialogRef.value.initDialog("edit", row);
 };
 
-onMounted(() => {
-  getCurrentPage();
+onMounted(async () => {
+  loading.value = true;
+  await fetchSupplierList();
+  await fetchSpecGoodsList();
+  await getCurrentPage();
+  loading.value = false;
 });
+
+watch(
+  [searchInfo],
+  () => {
+    debounce(() => {
+      getCurrentPage();
+    }, 500)();
+  },
+  { deep: true }
+);
+
+watch(
+  () => [
+    paginationConfig.value.currentPageNum,
+    paginationConfig.value.pageSize
+  ],
+  () => {
+    getCurrentPage();
+  },
+  { deep: true }
+);
 </script>
 
 <template>
@@ -144,18 +243,36 @@ onMounted(() => {
           v-model="searchInfo.materialCode"
           style="width: 240px"
           placeholder="请输入料号"
+          :disabled="loading"
         />
       </el-space>
       <div>
-        <el-button type="primary" size="large" @click="handleAddClick">
+        <el-button
+          type="primary"
+          size="large"
+          @click="handleAddClick"
+          :disabled="loading"
+        >
           添加产品
         </el-button>
       </div>
     </div>
 
-    <el-table :data="currentPage" :row-class-name="addClass">
-      <el-table-column prop="lastQuoteDate" label="业务日期" />
-      <el-table-column prop="supplierName" label="供应商" />
+    <el-table
+      :data="currentPage"
+      :row-class-name="addClass"
+      v-loading="loading"
+      element-loading-text="加载中..."
+    >
+      <el-table-column prop="businessDate" label="业务日期" />
+      <el-table-column prop="supplierId" label="供应商">
+        <template #default="scope">
+          {{
+            supplierList.find(item => item.id === scope.row.supplierId)
+              ?.companyName || "-"
+          }}
+        </template>
+      </el-table-column>
       <el-table-column prop="materialCode" label="料号" />
       <el-table-column prop="productName" label="品名" />
       <el-table-column prop="specification" label="规格" />
@@ -172,12 +289,12 @@ onMounted(() => {
             size="large"
             @click="handleUpdateClick(scope.row)"
           >
-            更新
+            编辑
           </el-button>
           <el-button
             :disabled="scope.row.enable === false"
             link
-            type="primary"
+            type="danger"
             @click="deletePop(scope)"
             size="large"
             >删除</el-button
@@ -200,6 +317,8 @@ onMounted(() => {
       ref="detailDialogRef"
       :addCateData="addCateData"
       :updateCateData="updateCateData"
+      :supplierList="supplierList"
+      :specGoodsList="specGoodsList"
     />
   </div>
 </template>

@@ -41,7 +41,7 @@ const formRef = ref(null);
 const subFormRef = ref(null);
 const rules = ref({
   categoryName: [
-    { required: true, message: "Please input name", trigger: "blur" }
+    { required: true, message: "请输入分类名称", trigger: "blur" }
   ],
   categoryCode: [
     { required: true, message: "Please input code", trigger: "blur" }
@@ -321,11 +321,11 @@ watch([currentPageNum, pageSize], () => {
             size="large"
             @click.stop="openUpdatePop(scope)"
           >
-            更新
+            编辑
           </el-button>
           <el-button
             link
-            type="primary"
+            type="danger"
             @click.stop="deletePop(scope)"
             size="large"
             >删除</el-button
@@ -348,7 +348,7 @@ watch([currentPageNum, pageSize], () => {
         @current-change="changeCurrentPage"
         v-model:page-size="pageSize"
         @size-change="handleSizeChange"
-        layout="total,  prev,  next"
+        layout="total,  prev, pager, next"
         :total="total"
       />
     </div>

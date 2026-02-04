@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { FormInstance } from "element-plus";
 import { nextTick } from "process";
 import { message } from "@/utils/message";
-import { id } from "element-plus/es/locale/index.mjs";
 
 const props = defineProps({
   addCateData: {
@@ -12,6 +11,14 @@ const props = defineProps({
   },
   updateCateData: {
     type: Function,
+    required: true
+  },
+  supplierList: {
+    type: Array<any>,
+    required: true
+  },
+  specGoodsList: {
+    type: Array<any>,
     required: true
   }
 });
@@ -22,8 +29,8 @@ const dialogType = ref<"add" | "edit">("add");
 const ruleFormRef = ref<FormInstance>();
 const ruleForm = reactive({
   id: "",
-  lastQuoteDate: "", // 业务日期
-  supplierName: "", // 供应商
+  businessDate: "", // 业务日期
+  supplierId: "", // 供应商ID
   materialCode: "", // 料号
   productName: "", // 品名
   specification: "", // 规格
@@ -48,17 +55,41 @@ const initDialog = (type: "add" | "edit", row?: any) => {
   dialogVisible.value = true;
 };
 
+const handleMaterialCodeChange = (val: string) => {
+  const selectedItem = props.specGoodsList.find(item => item.u9No === val);
+  // console.log("当前选择的料号:", selectedItem);
+  if (selectedItem) {
+    ruleForm.productName = selectedItem.specName;
+    ruleForm.barcode = selectedItem.barcode;
+  }
+};
+
 const submitForm = () => {
   ruleFormRef.value?.validate(valid => {
     if (valid) {
       if (dialogType.value === "add") {
-        props.addCateData(ruleForm);
+        props.addCateData(ruleForm, () => {
+          dialogVisible.value = false;
+        });
       } else {
-        props.updateCateData(ruleForm);
+        props.updateCateData(ruleForm, () => {
+          dialogVisible.value = false;
+        });
       }
     }
   });
 };
+
+// 判断是否可以修改价格
+const canModifyPrice = computed(() => (supplierId: number | string) => {
+  const result = props.supplierList.find(item => item.id == supplierId);
+  // console.log("getSupplierInfo:", result);
+  if (result?.hasSignAgreement) {
+    if (result?.supplementaryAgreement?.length > 0) return true;
+    return false;
+  }
+  return true;
+});
 
 defineExpose({ initDialog });
 </script>
@@ -78,9 +109,9 @@ defineExpose({ initDialog });
         label-width="auto"
       >
         <!-- 业务日期 -->
-        <el-form-item label="业务日期" prop="lastQuoteDate">
+        <el-form-item label="业务日期" prop="businessDate">
           <el-date-picker
-            v-model="ruleForm.lastQuoteDate"
+            v-model="ruleForm.businessDate"
             type="date"
             placeholder="选择日期"
             format="YYYY-MM-DD"
@@ -90,12 +121,37 @@ defineExpose({ initDialog });
 
         <!-- 供应商 -->
         <el-form-item label="供应商" prop="supplierName">
-          <el-input v-model="ruleForm.supplierName" />
+          <el-select
+            v-model="ruleForm.supplierId"
+            placeholder="请选择供应商"
+            clearable
+            filterable
+          >
+            <el-option
+              v-for="item in props.supplierList"
+              :key="item.id"
+              :label="item.companyName"
+              :value="item.id"
+            />
+          </el-select>
         </el-form-item>
 
         <!-- 料号 -->
         <el-form-item label="料号" prop="materialCode">
-          <el-input v-model="ruleForm.materialCode" />
+          <el-select
+            v-model="ruleForm.materialCode"
+            placeholder="请选择料号（自动匹配品名和条码）"
+            clearable
+            filterable
+            @change="handleMaterialCodeChange"
+          >
+            <el-option
+              v-for="item in props.specGoodsList"
+              :key="item.u9No"
+              :label="item.u9No"
+              :value="item.u9No"
+            />
+          </el-select>
         </el-form-item>
 
         <!-- 品名 -->
@@ -120,7 +176,12 @@ defineExpose({ initDialog });
 
         <!-- 价格 -->
         <el-form-item label="价格" prop="referenceCost">
-          <el-input v-model="ruleForm.referenceCost" />
+          <el-input
+            v-model="ruleForm.referenceCost"
+            :disabled="!canModifyPrice(ruleForm.supplierId)"
+          >
+            <template #prepend>CNY</template>
+          </el-input>
         </el-form-item>
 
         <el-form-item>

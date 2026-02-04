@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch, reactive } from "vue";
 import {
   getEnum,
   getPageSupplier,
@@ -8,18 +9,18 @@ import {
   deleteSupplier,
   getPagePd,
   getProductInfo,
-  fetchProductList
+  fetchProductList,
+  baseUrlApi,
+  getCatePd
 } from "@/api/user";
-import { ref, watch, reactive } from "vue";
-import { message } from "@/utils/message";
-import { baseUrlApi, getCatePd } from "../../api/user";
 import { getToken, formatToken, getUserDataSource } from "@/utils/auth";
+import { message } from "@/utils/message";
+import { expirableLocalStorage } from "@/utils/customLocalStorage";
 import * as XLSX from "xlsx";
 import { debounce } from "@pureadmin/utils";
 import { buildTree } from "../../utils/common";
-import type { CascaderProps } from "element-plus";
 import { ElMessage } from "element-plus";
-import { expirableLocalStorage } from "@/utils/customLocalStorage";
+import type { CascaderProps } from "element-plus";
 
 defineOptions({
   name: "Welcome"
@@ -64,13 +65,17 @@ const newSupplierData = ref({
   relatedCertificate: [],
   // supplier_grade 枚举接口传ID回来
   supplierGradeId: "",
-  // 接口  下拉选择  传id number【】
+  // 接口  下拉选择  传id number[]
   supplierProduct: [],
   // 税号
   taxNumber: "string",
   categoryId: "",
   // 产品信息
-  productInfo: ""
+  productInfo: [],
+  // 年度框架协议是否签订
+  hasSignAgreement: false,
+  // 补充协议
+  supplementaryAgreement: []
 });
 const activeCateData = ref({});
 const dialogUpdateVisible = ref(false);
@@ -79,7 +84,7 @@ const openType = ref("new");
 const uploadUrl = baseUrlApi("/supplier/upload"); // 替换为实际的后端上传接口地址
 const selectedRows = ref([]);
 const selectedRowCount = ref(0);
-const supplierFormRef = ref("");
+const supplierFormRef = ref();
 const supplierRules = {
   companyName: [{ required: true, message: "输入公司名称", trigger: "blur" }],
   companyAddress: [
@@ -108,14 +113,17 @@ const getEnums = () => {
   getEnum({
     type: "supplier_grade"
   })
-    .then(res => {
+    .then((res: any) => {
       const { code, data } = res;
       if (code == 200) {
-        enums.value = data;
+        enums.value = data.map(item => ({
+          ...item,
+          id: item.id.toString()
+        }));
       }
     })
-    .catch(res => {
-      message("获取枚举失败--", { type: "error" });
+    .catch(error => {
+      message("获取枚举失败:" + error.message, { type: "error" });
     });
 };
 
@@ -126,7 +134,7 @@ const getAllPd = () => {
   getCatePd({
     categoryId: newSupplierData.value.categoryId
     // categoryId : 14
-  }).then(res => {
+  }).then((res: any) => {
     if (res?.code) {
       cateAllPd.value = res?.data || [];
     }
@@ -157,7 +165,7 @@ const getCurrentPage = () => {
     pageNo: Number(currentPageNum.value),
     pageSize: Number(pageSize.value),
     searchStr: JSON.stringify(searchStr)
-  }).then(res => {
+  }).then((res: any) => {
     if (res?.code) {
       currentPage.value = res?.data?.records || [];
       // businessLicense
@@ -204,6 +212,19 @@ const getCurrentPage = () => {
           });
         });
         item.contractInfo = JSON.parse(JSON.stringify(contractInfoArr));
+
+        // supplementaryAgreement
+        let supplementaryAgreementFile: any = [];
+
+        item.supplementaryAgreement.map(item => {
+          supplementaryAgreementFile.push({
+            name: item,
+            url: item
+          });
+        });
+        item.supplementaryAgreement = JSON.parse(
+          JSON.stringify(supplementaryAgreementFile)
+        );
 
         let info = JSON.parse(item.contactInfo);
         // 联系人和联系方式转一下
@@ -256,7 +277,14 @@ const clearnewSupplierData = () => {
     // 接口  下拉选择  传id number【】
     supplierProduct: [],
     // 税号
-    taxNumber: ""
+    taxNumber: "",
+    categoryId: "",
+    // 产品信息
+    productInfo: [],
+    // 年度框架协议是否签订
+    hasSignAgreement: false,
+    // 补充协议
+    supplementaryAgreement: []
   };
 };
 
@@ -265,7 +293,7 @@ const addCateData = async () => {
   //   return
   // }
   if (!supplierFormRef.value) return;
-  await supplierFormRef.value.validate((valid, fields) => {
+  await supplierFormRef.value?.validate((valid, fields) => {
     if (valid) {
       let busFile = [];
       newSupplierData.value.businessLicense.map(item => {
@@ -295,6 +323,13 @@ const addCateData = async () => {
         }
       });
 
+      const supplementaryAgreementFile = [];
+      newSupplierData.value.supplementaryAgreement.map(item => {
+        if (item.response.code == 200) {
+          supplementaryAgreementFile.push(item.response.data);
+        }
+      });
+
       const sendConfig = {
         // 银行账号
         bankAccount: newSupplierData.value.bankAccount,
@@ -321,10 +356,14 @@ const addCateData = async () => {
         // 接口  下拉选择  传id number【】
         supplierProduct: getProductList(newSupplierData.value.productInfo),
         // 税号
-        taxNumber: newSupplierData.value.taxNumber
+        taxNumber: newSupplierData.value.taxNumber,
+        // 年度框架协议是否签订
+        hasSignAgreement: newSupplierData.value.hasSignAgreement,
+        // 补充协议
+        supplementaryAgreement: supplementaryAgreementFile
       };
       addSupplier(sendConfig)
-        .then(res => {
+        .then((res: any) => {
           const { code, data, msg } = res;
           if (res.code == 200) {
             message("添加供应商成功", { type: "success" });
@@ -332,11 +371,11 @@ const addCateData = async () => {
             clearnewSupplierData();
             getCurrentPage();
           } else {
-            message("添加供应商失败--" + msg, { type: "error" });
+            message("添加供应商失败:" + msg, { type: "error" });
           }
         })
         .catch(err => {
-          message("添加分类失败", { type: "error" });
+          message("添加分类失败:" + err.message, { type: "error" });
         });
     } else {
       console.log("error submit!", fields);
@@ -345,10 +384,22 @@ const addCateData = async () => {
 };
 
 const getProductList = (source = []) => {
+  console.log("getProductList:", source);
   const resultArr: number[] = [];
-  source?.map(item => {
-    resultArr.push(item?.[2]);
+
+  // 工厂产品
+  const sourceFactory = source.filter(item => item?.[0] === "rootFactory");
+  // 智创产品
+  const sourceZc = source.filter(item => item?.[0] === "rootPdzc");
+
+  sourceFactory?.map(item => {
+    resultArr.push(item?.[3]);
   });
+
+  sourceZc?.map(item => {
+    resultArr.push(item?.[1]);
+  });
+
   return resultArr.filter(item => item);
 };
 
@@ -356,7 +407,7 @@ const getProductList = (source = []) => {
 const updateCateData = async () => {
   // kong
   if (!supplierFormRef.value) return;
-  await supplierFormRef.value.validate((valid, fields) => {
+  await supplierFormRef.value?.validate((valid, fields) => {
     if (valid) {
       let busFile = [];
       newSupplierData.value.businessLicense.map(item => {
@@ -393,6 +444,16 @@ const updateCateData = async () => {
           contractInfoArr.push(item.url);
         }
       });
+
+      let supplementaryAgreementFile = [];
+      newSupplierData.value.supplementaryAgreement.map(item => {
+        if (item.response?.code == 200) {
+          supplementaryAgreementFile.push(item.response.data);
+        } else if (item.url) {
+          supplementaryAgreementFile.push(item.url);
+        }
+      });
+
       const sendConfig = {
         id: newSupplierData.value.id,
         // 银行账号
@@ -420,10 +481,12 @@ const updateCateData = async () => {
         // 接口  下拉选择  传id number【】
         supplierProduct: getProductList(newSupplierData.value.productInfo),
         // 税号
-        taxNumber: newSupplierData.value.taxNumber
+        taxNumber: newSupplierData.value.taxNumber,
+        hasSignAgreement: newSupplierData.value.hasSignAgreement,
+        supplementaryAgreement: supplementaryAgreementFile
       };
       updateSupplier(sendConfig)
-        .then(res => {
+        .then((res: any) => {
           const { code, data, msg } = res;
           if (res.code == 200) {
             message("更新供应商成功", { type: "success" });
@@ -432,11 +495,11 @@ const updateCateData = async () => {
 
             getCurrentPage();
           } else {
-            message("更新供应商失败--" + msg, { type: "error" });
+            message("更新供应商失败:" + msg, { type: "error" });
           }
         })
         .catch(err => {
-          message("更新供应商失败", { type: "error" });
+          message("更新供应商失败:" + err.message, { type: "error" });
         });
     } else {
       console.log("error submit!", fields);
@@ -446,19 +509,32 @@ const updateCateData = async () => {
 
 // 打开更新弹窗
 const openUpdatePop = val => {
+  console.log("打开更新弹窗:", val.row);
   openType.value = "update";
   activeCateData.value = JSON.parse(JSON.stringify(val.row));
-  newSupplierData.value = JSON.parse(JSON.stringify(val.row));
+  newSupplierData.value = {
+    ...JSON.parse(JSON.stringify(val.row)),
+
+    hasSignAgreement: val.row?.hasSignAgreement || false,
+    supplementaryAgreement: val.row?.supplementaryAgreement || []
+  };
   const promiseArr = val.row?.supplierProduct?.map(item => {
     return getProductInfo({ id: item });
   });
   Promise.all(promiseArr).then(res => {
     // 构建级联选择器的值
-    const cascaderValue = res
+    // console.log("级联选择器的值:", res);
+    const resFactory = res.filter(
+      item => item?.data?.parentCategoryId !== null
+    );
+    const resPdzc = res.filter(item => item?.data?.parentCategoryId === null);
+
+    const cascaderValue = resFactory
       .map(item => {
         if (item?.data) {
           // 返回 [一级ID, 二级ID, 三级ID] 格式的数据
           return [
+            "rootFactory",
             +item.data.parentCategoryId, // 一级分类ID
             +item.data.categoryId, // 二级分类ID
             item.data.id // 三级产品ID
@@ -468,8 +544,24 @@ const openUpdatePop = val => {
       })
       .filter(Boolean); // 过滤掉空值
 
+    const cascaderValuePdzc = resPdzc
+      .map(item => {
+        if (item?.data) {
+          return [
+            "rootPdzc",
+            item.data.id // 三级产品ID
+          ];
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    const cascaderValueHasPdzc = [...cascaderValue, ...cascaderValuePdzc];
+
+    // console.log("打开更新弹窗-级联选择器的值:", cascaderValueHasPdzc);
+
     // 设置级联选择器的值
-    newSupplierData.value.productInfo = cascaderValue;
+    newSupplierData.value.productInfo = cascaderValueHasPdzc;
   });
 
   dialogFormVisible.value = true;
@@ -524,6 +616,9 @@ const handleUploadSuccess = (response, from, fileList, ddd) => {
   } else if (from == "contractInfo") {
     newSupplierData.value.contractInfo = response.data;
     message("合同信息", { type: "success" });
+  } else if (from == "supplementaryAgreement") {
+    newSupplierData.value.supplementaryAgreement = response.data;
+    message("补充协议", { type: "success" });
   }
 };
 
@@ -564,12 +659,20 @@ const exportOut = () => {
     let arr = [];
     arr.push(item.companyName);
     arr.push(item.companyAddress);
-    arr.push(item.contactInfoWay.join(","));
-    arr.push(item.contactInfoPerson.join(","));
+    arr.push(formatJoin(item.contactInfoWay));
+    arr.push(formatJoin(item.contactInfoPerson));
     arr.push(item.supplierGradeName);
-    arr.push(item.supplierProductName.join(","));
+    arr.push(formatJoin(item.supplierProductName));
     data.push(JSON.parse(JSON.stringify(arr)));
   });
+
+  function formatJoin(data: any[] | null) {
+    if (data && data.length) {
+      return data.join(",");
+    }
+    return "";
+  }
+
   // 创建 Workbook 对象
   const workbook = XLSX.utils.book_new();
 
@@ -580,7 +683,7 @@ const exportOut = () => {
   XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
 
   // 生成 Excel 文件并下载
-  XLSX.writeFile(workbook, "data.xlsx");
+  XLSX.writeFile(workbook, "供应商导出.xlsx");
 };
 
 const handlePictureCardPreview = uploadFile => {
@@ -688,7 +791,7 @@ const mergeTreeData = (sourceData, rawTreeData) => {
 const fetchMergeTreeData = async () => {
   let curCatList = [] as any;
   let curProductList = [] as any;
-  const curCatRes = await getAllCate({});
+  const curCatRes: any = await getAllCate({});
   if (curCatRes?.code) {
     curCatList = buildTree(curCatRes?.data || []);
   }
@@ -710,13 +813,49 @@ const fetchMergeTreeData = async () => {
     }
   }
   */
-  const curProductRes = await fetchProductList({});
-  if (curCatRes?.code) {
+  const curProductRes: any = await fetchProductList({});
+  // const curProductRes: any = await getPagePd({
+  //   pageNo: 1,
+  //   pageSize: 10e3
+  // });
+  if (curProductRes?.code) {
     // 将接口返回的数据转换为树形结构
     curProductList = convertToTree(curProductRes?.data || []);
   }
   const mergedTree = mergeTreeData(curCatList, curProductList);
-  allProductList.value = mergedTree;
+
+  //#region 新增一层根节点
+  // 处理pdzc树形结构
+  const pdzcTree = curProductRes?.data
+    .filter((item: any) => {
+      return item.type === "pdzc";
+    })
+    .map((item: any) => {
+      return {
+        value: item.id,
+        label: item.productName,
+        children: []
+      };
+    });
+
+  // console.log("curProductRes:", curProductRes, pdzcTree, mergedTree);
+
+  const rootTreeHasZc = [
+    {
+      value: "rootFactory",
+      label: "工厂产品",
+      children: mergedTree
+    },
+    {
+      value: "rootPdzc",
+      label: "智创产品",
+      children: pdzcTree
+    }
+  ];
+  //#endregion
+
+  // console.log("产品信息树：", rootTreeHasZc);
+  allProductList.value = rootTreeHasZc;
 };
 
 // 响应式数据
@@ -816,7 +955,7 @@ fetchMergeTreeData();
         <el-input
           v-model="searchInfo.supplierPerson"
           style="width: 240px"
-          placeholder="请输入公司联系人"
+          placeholder="请输入联系方式/联系人"
         />
       </el-space>
 
@@ -869,7 +1008,7 @@ fetchMergeTreeData();
           <el-button
             :disabled="scope.row.enable === false"
             link
-            type="primary"
+            type="danger"
             @click="deletePop(scope)"
             size="large"
             >删除</el-button
@@ -893,8 +1032,9 @@ fetchMergeTreeData();
 
     <el-dialog
       v-model="dialogFormVisible"
-      :title="openType == 'new' ? '添加新供应商' : '更新供应商'"
+      :title="openType == 'new' ? '添加新供应商' : '编辑供应商'"
       width="800"
+      align-center
     >
       <el-form
         ref="supplierFormRef"
@@ -1084,7 +1224,46 @@ fetchMergeTreeData();
             </el-form-item>
           </el-col>
         </el-row>
+
+        <el-card shadow="never" style="background-color: rgb(249 250 251)">
+          <el-form-item prop="" label="年度框架协议">
+            <el-checkbox
+              v-model="newSupplierData.hasSignAgreement"
+              label="已签订年度框架协议"
+              size="small"
+            />
+          </el-form-item>
+          <el-form-item
+            prop=""
+            label="补充协议（如有涨价）"
+            v-if="newSupplierData.hasSignAgreement"
+          >
+            <el-upload
+              v-model:file-list="newSupplierData.supplementaryAgreement"
+              class="upload-demo"
+              :on-preview="handlePictureCardPreview"
+              :action="uploadUrl"
+              :accept="'*'"
+              :auto-upload="true"
+              list-type="text"
+              :headers="{
+                Authorization: formatToken(getToken().accessToken)
+              }"
+            >
+              <el-button>上传补充协议</el-button>
+            </el-upload>
+          </el-form-item>
+
+          <p class="text-[12px] text-[#666]">
+            {{
+              newSupplierData.hasSignAgreement
+                ? "已签约供应商产品报价原则上不变。如需涨价，需签署补充协议并上传后方可更新报价。"
+                : "未签约供应商报价按季度更新。"
+            }}
+          </p>
+        </el-card>
       </el-form>
+
       <template #footer>
         <div class="dialog-footer">
           <el-button
@@ -1096,6 +1275,7 @@ fetchMergeTreeData();
         </div>
       </template>
     </el-dialog>
+
     <el-dialog v-model="dialogDeleteVisible" title="" width="500">
       <span>确定删除该供应商吗？</span>
       <template #footer>
