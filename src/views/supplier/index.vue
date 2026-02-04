@@ -216,7 +216,7 @@ const getCurrentPage = () => {
         // supplementaryAgreement
         let supplementaryAgreementFile: any = [];
 
-        item.supplementaryAgreement.map(item => {
+        (item.supplementaryAgreement || []).map(item => {
           supplementaryAgreementFile.push({
             name: item,
             url: item

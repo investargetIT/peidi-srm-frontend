@@ -265,9 +265,9 @@ const updateCateData = async val => {
       });
       updatePd({
         ...rest,
-        harvestSeason: !newProdctData.value.harvestSeason
+        harvestSeason: !activeCateData.value.harvestSeason
           ? null
-          : newProdctData.value.harvestSeason,
+          : activeCateData.value.harvestSeason,
         photoList: imageList
       })
         .then(res => {

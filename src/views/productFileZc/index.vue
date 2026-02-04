@@ -213,12 +213,14 @@ onMounted(async () => {
   loading.value = false;
 });
 
+const debouncedGetCurrentPage = debounce(() => {
+  getCurrentPage();
+}, 500);
+
 watch(
   [searchInfo],
   () => {
-    debounce(() => {
-      getCurrentPage();
-    }, 500)();
+    debouncedGetCurrentPage();
   },
   { deep: true }
 );

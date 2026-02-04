@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, nextTick } from "vue";
 import { FormInstance } from "element-plus";
-import { nextTick } from "process";
 import { message } from "@/utils/message";
 
 const props = defineProps({
@@ -38,6 +37,13 @@ const ruleForm = reactive({
   unit: "", // 单位
   referenceCost: "" // 价格
 });
+
+const rules = {
+  productName: [
+    { required: true, message: "请输入品名", trigger: "change" },
+    { required: true, message: "请输入品名", trigger: "blur" }
+  ]
+};
 
 const beforeClose = (done: () => void) => {
   ruleFormRef.value?.resetFields();
@@ -107,6 +113,7 @@ defineExpose({ initDialog });
         style="max-width: 600px"
         :model="ruleForm"
         label-width="auto"
+        :rules="rules"
       >
         <!-- 业务日期 -->
         <el-form-item label="业务日期" prop="businessDate">
