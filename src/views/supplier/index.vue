@@ -631,12 +631,12 @@ const beforeUpload = file => {
   const isLt2M = file.size / 1024 / 1024 < 10;
 
   if (!isJpgOrPng) {
-    message("添加分类成功", { type: "error" });
+    message("只能上传 JPG/PNG 格式的图片", { type: "error" });
 
     return false;
   }
   if (!isLt2M) {
-    message("添加分类成功", { type: "error" });
+    message("文件大小不能超过 10MB", { type: "error" });
 
     return false;
   }
@@ -922,10 +922,11 @@ const fetchMergeTreeData = async () => {
 // };
 
 // searchInfo变动时重新获取数据，但是不能调用搜索太频繁了
+const debouncedGetCurrentPage = debounce(getCurrentPage, 500);
 watch(
   [searchInfo],
   () => {
-    debounce(getCurrentPage, 500)();
+    debouncedGetCurrentPage();
   },
   { deep: true }
 );
@@ -1391,7 +1392,7 @@ const exportAll = async () => {
           </el-col>
         </el-row>
 
-        <el-card shadow="never" style="background-color: rgb(249 250 251)">
+        <!-- <el-card shadow="never" style="background-color: rgb(249 250 251)">
           <el-form-item prop="" label="年度框架协议">
             <el-checkbox
               v-model="newSupplierData.hasSignAgreement"
@@ -1427,7 +1428,7 @@ const exportAll = async () => {
                 : "未签约供应商报价按季度更新。"
             }}
           </p>
-        </el-card>
+        </el-card> -->
       </el-form>
 
       <template #footer>
