@@ -193,7 +193,7 @@ const getCurrentPage = () => {
         // relatedCertificate 转一下
         let relatedArr: any = [];
 
-        item.relatedCertificates.map(item => {
+        item.relatedCertificate.map(item => {
           relatedArr.push({
             name: item,
             url: item
@@ -1321,7 +1321,6 @@ const exportAll = async () => {
                 :options="allProductList"
                 placeholder=" "
                 v-model="newSupplierData.productInfo"
-                disabled
               />
             </el-form-item>
           </el-col>

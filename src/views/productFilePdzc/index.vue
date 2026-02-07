@@ -344,7 +344,7 @@ watch(
       <el-table-column prop="barcode" label="条码" />
       <el-table-column prop="unit" label="单位" />
       <el-table-column prop="referenceCost" label="价格" />
-      <el-table-column prop="supplementaryAgreement" label="补充协议">
+      <!-- <el-table-column prop="supplementaryAgreement" label="补充协议">
         <template #default="scope">
           <div
             v-if="
@@ -366,7 +366,7 @@ watch(
           </div>
           <span v-else>-</span>
         </template>
-      </el-table-column>
+      </el-table-column> -->
 
       <el-table-column fixed="right" label="操作" width="125">
         <template #default="scope">

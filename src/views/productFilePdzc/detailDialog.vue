@@ -72,6 +72,8 @@ const initDialog = (type: "add" | "edit", row?: any) => {
         } else {
           ruleForm[key] = row[key];
         }
+
+        console.log("弹窗数据:", ruleForm);
       });
     });
   } else {
@@ -273,7 +275,10 @@ defineExpose({ initDialog });
         <el-form-item label="价格" prop="referenceCost">
           <el-input
             v-model="ruleForm.referenceCost"
-            :disabled="!canModifyPrice"
+            :disabled="
+              ruleForm.hasSignAgreement &&
+              ruleForm.supplementaryAgreement.length === 0
+            "
           >
             <template #prepend>CNY</template>
           </el-input>
