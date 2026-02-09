@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import { useNav } from "@/layout/hooks/useNav";
-import LaySearch from "../lay-search/index.vue";
-import LayNotice from "../lay-notice/index.vue";
 import LayNavMix from "../lay-sidebar/NavMix.vue";
-import LaySidebarFullScreen from "../lay-sidebar/components/SidebarFullScreen.vue";
 import LaySidebarBreadCrumb from "../lay-sidebar/components/SidebarBreadCrumb.vue";
 import LaySidebarTopCollapse from "../lay-sidebar/components/SidebarTopCollapse.vue";
 
-import LogoutCircleRLine from "@iconify-icons/ri/logout-circle-r-line";
-import Setting from "@iconify-icons/ri/settings-3-line";
-import RiEditBoxLine from "@iconify-icons/ri/edit-box-line";
 import { emitter } from "@/utils/mitt.ts";
-import { computed, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
+import RiEditBoxLine from "@iconify-icons/ri/edit-box-line";
+import LogoutCircleRLine from "@iconify-icons/ri/logout-circle-r-line";
 import { storageLocal } from "@pureadmin/utils";
+import { ElMessage } from "element-plus";
+import { computed, reactive, ref } from "vue";
 import { updateUserPassword } from "../../../api/user";
 
 const {
@@ -97,7 +93,7 @@ const handlePasswordUpdate = () => {
 const isDingUser = computed(() => {
   if (navigator.userAgent.includes("DingTalk")) return true;
   const dataSource = JSON.parse(localStorage.getItem("dataSource") || "{}");
-  console.log("dataSource==", dataSource);
+  // console.log("dataSource==", dataSource);
   if (!!dataSource?.dingId) return true;
   return false;
 });

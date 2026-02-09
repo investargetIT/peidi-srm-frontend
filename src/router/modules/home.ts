@@ -1,6 +1,5 @@
 const { VITE_HIDE_HOME } = import.meta.env;
 const Layout = () => import("@/layout/index.vue");
-import cateIcon from "../../assets/png/cateIcon.png";
 export default {
   path: "/",
   name: "Home",
@@ -8,16 +7,16 @@ export default {
   component: Layout,
   meta: {
     icon: "prime:box",
-    title: "首页",
+    title: "工厂产品分类管理",
     rank: 0
   },
   children: [
     {
       path: "/index",
-      name: "category",
-      component: () => import("@/views/classify/index.vue"),
+      name: "classifyPro",
+      component: () => import("@/views/classifyPro/index.vue"),
       meta: {
-        title: "商品分类管理",
+        title: "工厂产品分类管理",
         showParent: false
       }
     }

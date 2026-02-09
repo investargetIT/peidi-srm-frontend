@@ -1,5 +1,4 @@
 import { http } from "@/utils/http";
-import { getUserDataSource } from "@/utils/auth";
 export type UserResult = {
   success: boolean;
   data: {
@@ -277,7 +276,7 @@ export const getAllSup = params => {
   });
 };
 
-// 获取所有供应商
+// 下载文件
 export const downLoadFile = params => {
   return http.request("get", baseUrlApi("/common/download"), {
     params

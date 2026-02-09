@@ -7,14 +7,17 @@ import {
   updatePd,
   deletePd,
   getPagePd,
-  getFileDownLoadPath
+  getFileDownLoadPath,
+  getPageSupplier
 } from "@/api/user";
-import { ref, watch, computed, watchEffect } from "vue";
-import { useRoute } from "vue-router";
+import { ref, watch, computed, watchEffect, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { message } from "@/utils/message";
 import { debounce, storageLocal } from "@pureadmin/utils";
 import { formatToken, getToken } from "@/utils/auth";
 import { buildTree } from "@/utils/common";
+
+const router = useRouter();
 
 defineOptions({
   name: "Welcome"
@@ -82,6 +85,10 @@ const newProdctData = ref({
 
   // 品名
   productName: "",
+
+  supplierId: "", // 供应商ID
+  supplierProduct: [], // 供应商ID列表
+
   // 规格
   specification: "",
   // 单位 buchuan
@@ -100,6 +107,8 @@ const dialogDeleteVisible = ref(false);
 const dialogImageUrl = ref("");
 const dialogVisible = ref(false);
 const curUserId = storageLocal().getItem("dataSource")?.id || null;
+
+const supplierList = ref([]);
 
 const getEnums = () => {
   getEnum({
@@ -129,13 +138,15 @@ const handleSizeChange = (val: number) => {
   pageSize.value = val;
 };
 
+const debouncedGetCurrentPage = debounce(() => {
+  getCurrentPage();
+}, 500);
+
 // searchInfo变动时重新获取数据，但是不能调用搜索太频繁了
 watch(
   [searchInfo],
   () => {
-    debounce(() => {
-      getCurrentPage();
-    }, 500)();
+    debouncedGetCurrentPage();
   },
   { deep: true }
 );
@@ -173,9 +184,23 @@ const getCurrentPage = () => {
   });
 };
 
-getAllCateFun();
-getCurrentPage();
-getEnums();
+// 供应商列表
+const fetchSupplierList = () => {
+  return getPageSupplier({
+    pageNo: 1,
+    pageSize: 10e3
+  }).then((res: any) => {
+    // console.log("供应商列表：", res);
+    supplierList.value = res.data.records || [];
+  });
+};
+
+onMounted(async () => {
+  await fetchSupplierList();
+  getAllCateFun();
+  getCurrentPage();
+  getEnums();
+});
 
 // 清除新增分类信息
 const clearnewProdctData = () => {
@@ -189,8 +214,13 @@ const clearnewProdctData = () => {
 
     managementLevelId: "",
     // "managementLevelName": "",
+
     // 品名
     productName: "",
+
+    supplierId: "", // 供应商ID
+    supplierProduct: [], // 供应商ID列表
+
     // 规格
     specification: "",
     // 单位 buchuan
@@ -228,7 +258,8 @@ const addCateData = async () => {
           ? null
           : newProdctData.value.harvestSeason,
         photoList: imageList,
-        userId: curUserId
+        userId: curUserId,
+        type: "factory"
       })
         .then(res => {
           const { code, data, msg } = res;
@@ -265,9 +296,9 @@ const updateCateData = async val => {
       });
       updatePd({
         ...rest,
-        harvestSeason: !newProdctData.value.harvestSeason
+        harvestSeason: !activeCateData.value.harvestSeason
           ? null
-          : newProdctData.value.harvestSeason,
+          : activeCateData.value.harvestSeason,
         photoList: imageList
       })
         .then(res => {
@@ -421,6 +452,10 @@ watchEffect(() => {
     // console.log("categoryNameList", categoryNameList.value);
   }
 });
+
+const handleAddSupplier = () => {
+  router.push({ name: "supplier" });
+};
 </script>
 
 <template>
@@ -444,6 +479,7 @@ watchEffect(() => {
           v-model="searchInfo.productName"
           style="width: 240px"
           placeholder="请输入品名"
+          clearable
         />
       </el-space>
       <div>
@@ -460,7 +496,12 @@ watchEffect(() => {
       </div>
     </div>
 
-    <el-table :data="currentPage" :row-class-name="addClass">
+    <el-table
+      :data="currentPage"
+      :row-class-name="addClass"
+      :header-cell-style="{ color: '#0a0a0a' }"
+      size="small"
+    >
       <el-table-column fixed prop="materialCode" label="料号" />
       <el-table-column fixed prop="userInfo" label="信息维护人" />
       <el-table-column prop="parentCategoryName" label="主分类" />
@@ -479,8 +520,30 @@ watchEffect(() => {
       <el-table-column prop="referenceCost" label="价格" />
       <el-table-column prop="lastQuoteDate" label="最近一次报价时间" />
       <el-table-column prop="supplyAllYea" label="常年正常供应" />
-      <el-table-column prop="supplierName" label="品牌" />
-      <el-table-column fixed="right" label="操作" min-width="120">
+      <el-table-column prop="supplierName" label="供应商">
+        <template #default="scope">
+          <div
+            v-if="
+              scope.row.supplierProduct && scope.row.supplierProduct.length > 0
+            "
+          >
+            <span
+              v-for="(supplierId, index) in scope.row.supplierProduct"
+              :key="supplierId"
+              :class="{
+                'mr-2': Number(index) < scope.row.supplierProduct.length - 1
+              }"
+            >
+              {{
+                supplierList.find(item => item.id === supplierId)
+                  ?.companyName || supplierId
+              }}
+            </span>
+          </div>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column fixed="right" label="操作" width="125">
         <template #default="scope">
           <el-button
             :disabled="scope.row.enable === false"
@@ -583,6 +646,35 @@ watchEffect(() => {
             autocomplete="off"
           />
         </el-form-item>
+
+        <!-- 供应商 -->
+        <el-form-item
+          label="供应商"
+          prop="supplierName"
+          :label-width="formLabelWidth"
+        >
+          <el-space>
+            <el-select
+              v-model="newProdctData.supplierProduct"
+              placeholder="请选择供应商"
+              clearable
+              filterable
+              style="width: 275px"
+              multiple
+            >
+              <el-option
+                v-for="item in supplierList"
+                :key="item.id"
+                :label="item.companyName"
+                :value="item.id"
+              />
+            </el-select>
+            <el-button type="primary" size="default" @click="handleAddSupplier">
+              <el-icon><Plus /></el-icon>
+            </el-button>
+          </el-space>
+        </el-form-item>
+
         <el-form-item
           prop="specification"
           label="规格"
@@ -747,6 +839,35 @@ watchEffect(() => {
             autocomplete="off"
           />
         </el-form-item>
+
+        <!-- 供应商 -->
+        <el-form-item
+          label="供应商"
+          prop="supplierName"
+          :label-width="formLabelWidth"
+        >
+          <el-space>
+            <el-select
+              v-model="activeCateData.supplierProduct"
+              placeholder="请选择供应商"
+              clearable
+              filterable
+              style="width: 275px"
+              multiple
+            >
+              <el-option
+                v-for="item in supplierList"
+                :key="item.id"
+                :label="item.companyName"
+                :value="item.id"
+              />
+            </el-select>
+            <el-button type="primary" size="default" @click="handleAddSupplier">
+              <el-icon><Plus /></el-icon>
+            </el-button>
+          </el-space>
+        </el-form-item>
+
         <el-form-item
           label="规格"
           prop="specification"

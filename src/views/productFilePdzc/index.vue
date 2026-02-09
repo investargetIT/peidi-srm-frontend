@@ -22,7 +22,8 @@ const addClass = ({ row }) => {
 };
 
 const searchInfo = ref({
-  materialCode: ""
+  materialCode: "",
+  supplierId: ""
 });
 
 const currentPage = ref([
@@ -76,7 +77,8 @@ const fetchSpecGoodsList = () => {
 
 const getCurrentPage = () => {
   const searchStr: any = [
-    { searchName: "type", searchType: "equals", searchValue: `\"pdzc\"` }
+    { searchName: "type", searchType: "equals", searchValue: `\"pdzc\"` },
+    { searchName: "enable", searchType: "equals", searchValue: `true` }
   ];
   Object.keys(searchInfo.value).forEach(key => {
     if (searchInfo.value[key]) {
@@ -91,7 +93,8 @@ const getCurrentPage = () => {
   return getPagePd({
     pageNo: paginationConfig.value.currentPageNum,
     pageSize: paginationConfig.value.pageSize,
-    searchStr: JSON.stringify(searchStr)
+    searchStr: JSON.stringify(searchStr),
+    sortStr: JSON.stringify([{ sortName: "id", sortType: "desc" }])
   })
     .then((res: any) => {
       // console.log("智创产品列表：", res);
@@ -105,7 +108,32 @@ const getCurrentPage = () => {
       // 更新总页数
       paginationConfig.value.total = res.data?.total || 0;
 
-      currentPage.value = res.data.records || [];
+      currentPage.value = (res.data.records || []).map(item => {
+        // supplementaryAgreement
+        let supplementaryAgreementFile: any = [];
+
+        (item.supplementaryAgreement || []).map(fileUrl => {
+          supplementaryAgreementFile.push({
+            name: fileUrl.split("/").pop(), // 提取文件名
+            url: fileUrl
+          });
+        });
+        item.supplementaryAgreement = JSON.parse(
+          JSON.stringify(supplementaryAgreementFile)
+        );
+
+        // 处理供应商ID数组
+        if (typeof item.supplierId === "string") {
+          item.supplierProduct = item.supplierId
+            .split(",")
+            .filter(id => id)
+            .map(id => parseInt(id));
+        } else {
+          item.supplierProduct = item.supplierProduct || [];
+        }
+
+        return item;
+      });
     })
     .catch(err => {
       message("获取智创产品列表失败:" + err.message, { type: "error" });
@@ -136,7 +164,8 @@ const addCateData = (data: any, callback?: () => void) => {
   // return;
   addPd({
     ...data,
-    type: "pdzc"
+    type: "pdzc",
+    supplierId: data.supplierProduct.join(",")
   })
     .then((res: any) => {
       const { code, data, msg } = res;
@@ -158,7 +187,8 @@ const updateCateData = (data: any, callback?: () => void) => {
   console.log("更新数据:", data);
   // return;
   updatePd({
-    ...data
+    ...data,
+    supplierId: data.supplierProduct.join(",")
   })
     .then((res: any) => {
       const { code, data, msg } = res;
@@ -213,12 +243,14 @@ onMounted(async () => {
   loading.value = false;
 });
 
+const debouncedGetCurrentPage = debounce(() => {
+  getCurrentPage();
+}, 500);
+
 watch(
   [searchInfo],
   () => {
-    debounce(() => {
-      getCurrentPage();
-    }, 500)();
+    debouncedGetCurrentPage();
   },
   { deep: true }
 );
@@ -239,11 +271,27 @@ watch(
   <div>
     <div class="flex justify-between mb-[20px]">
       <el-space>
+        <el-select
+          v-model="searchInfo.supplierId"
+          style="width: 240px"
+          placeholder="请选择供应商"
+          :disabled="loading"
+          filterable
+          clearable
+        >
+          <el-option
+            v-for="item in supplierList"
+            :key="item.id"
+            :label="item.companyName"
+            :value="item.id"
+          />
+        </el-select>
         <el-input
           v-model="searchInfo.materialCode"
           style="width: 240px"
           placeholder="请输入料号"
           :disabled="loading"
+          clearable
         />
       </el-space>
       <div>
@@ -263,14 +311,31 @@ watch(
       :row-class-name="addClass"
       v-loading="loading"
       element-loading-text="加载中..."
+      :header-cell-style="{ color: '#0a0a0a' }"
+      size="small"
     >
       <el-table-column prop="businessDate" label="业务日期" />
-      <el-table-column prop="supplierId" label="供应商">
+      <el-table-column prop="supplierProduct" label="供应商">
         <template #default="scope">
-          {{
-            supplierList.find(item => item.id === scope.row.supplierId)
-              ?.companyName || "-"
-          }}
+          <div
+            v-if="
+              scope.row.supplierProduct && scope.row.supplierProduct.length > 0
+            "
+          >
+            <span
+              v-for="(supplierId, index) in scope.row.supplierProduct"
+              :key="supplierId"
+              :class="{
+                'mr-2': Number(index) < scope.row.supplierProduct.length - 1
+              }"
+            >
+              {{
+                supplierList.find(item => item.id === supplierId)
+                  ?.companyName || supplierId
+              }}
+            </span>
+          </div>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column prop="materialCode" label="料号" />
@@ -279,8 +344,31 @@ watch(
       <el-table-column prop="barcode" label="条码" />
       <el-table-column prop="unit" label="单位" />
       <el-table-column prop="referenceCost" label="价格" />
+      <!-- <el-table-column prop="supplementaryAgreement" label="补充协议">
+        <template #default="scope">
+          <div
+            v-if="
+              scope.row.supplementaryAgreement &&
+              scope.row.supplementaryAgreement.length > 0
+            "
+          >
+            <el-link
+              v-for="(file, index) in scope.row.supplementaryAgreement"
+              :key="index"
+              :href="file.url"
+              target="_blank"
+              type="primary"
+              :underline="false"
+              class="mr-2"
+            >
+              {{ file.name }}
+            </el-link>
+          </div>
+          <span v-else>-</span>
+        </template>
+      </el-table-column> -->
 
-      <el-table-column fixed="right" label="操作" min-width="120">
+      <el-table-column fixed="right" label="操作" width="125">
         <template #default="scope">
           <el-button
             :disabled="scope.row.enable === false"
