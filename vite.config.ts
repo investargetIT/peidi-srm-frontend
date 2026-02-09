@@ -1,12 +1,12 @@
+import { type ConfigEnv, loadEnv, type UserConfigExport } from "vite";
+import { exclude, include } from "./build/optimize";
 import { getPluginsList } from "./build/plugins";
-import { include, exclude } from "./build/optimize";
-import { type UserConfigExport, type ConfigEnv, loadEnv } from "vite";
 import {
-  root,
+  __APP_INFO__,
   alias,
-  wrapperEnv,
   pathResolve,
-  __APP_INFO__
+  root,
+  wrapperEnv
 } from "./build/utils";
 
 export default ({ mode }: ConfigEnv): UserConfigExport => {
@@ -57,6 +57,15 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
     define: {
       __INTLIFY_PROD_DEVTOOLS__: false,
       __APP_INFO__: JSON.stringify(__APP_INFO__)
+    },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          logger: {
+            warn: () => {} // 可选：静默弃用警告
+          }
+        }
+      }
     }
   };
 };
