@@ -53,7 +53,7 @@ const handleEditClick = (row: any) => {
 
 const handleDeleteClick = (row: any) => {
   ElMessageBox.confirm(
-    `确定删除【${row.supplierList?.[0].companyName}】-【${row.productName}】吗?`,
+    `确定删除【${row.supplierList?.[0]?.companyName ?? ""}】-【${row.productName}】吗?`,
     "提示",
     {
       confirmButtonText: "确定",
@@ -84,7 +84,7 @@ const setPaginationInfo = ({ currentPage, total }) => {
   if (currentPage) {
     paginationInfo.value.currentPage = currentPage;
   }
-  if (total) {
+  if (total !== undefined && total !== null) {
     paginationInfo.value.total = total;
   }
 };
@@ -124,7 +124,7 @@ const getHasSignAgreementStatus = (row: any) => {
         <el-table-column prop="supplierList" label="供应商" min-width="150px">
           <template #default="scope">
             <div>
-              {{ scope.row.supplierList?.[0].companyName }}
+              {{ scope.row.supplierList?.[0]?.companyName ?? "" }}
             </div>
           </template>
         </el-table-column>

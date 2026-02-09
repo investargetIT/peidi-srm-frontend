@@ -123,7 +123,7 @@ const initFormData = (type: "add" | "edit", row?: any) => {
       Object.assign(formData, row);
 
       // 回显供应商
-      formData.supplierProduct = row?.supplierList.map(item => item.id);
+      formData.supplierProduct = (row?.supplierList || []).map(item => item.id);
     }
   });
 };

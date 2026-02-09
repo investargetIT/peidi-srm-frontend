@@ -84,7 +84,7 @@ const initFormData = (type: "add" | "edit", row?: any) => {
       Object.assign(formData, row);
 
       // 供应商逻辑：supplierList用于回显 supplierProduct用于修改
-      formData.supplierProduct = row?.supplierList.map(item => item.id);
+      formData.supplierProduct = row?.supplierList?.map(item => item.id) ?? [];
     }
   });
 };

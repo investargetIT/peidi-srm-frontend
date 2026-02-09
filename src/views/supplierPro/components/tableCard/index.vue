@@ -55,11 +55,14 @@ const formatContactInfo = (contactInfo: string) => {
   if (!contactInfo) {
     return [];
   }
-  const contactInfoList = JSON.parse(contactInfo).map(item => ({
-    name: item.person,
-    info: item.info
-  }));
-  return contactInfoList;
+  try {
+    return JSON.parse(contactInfo).map(item => ({
+      name: item.person,
+      info: item.info
+    }));
+  } catch {
+    return [];
+  }
 };
 
 watch(
@@ -78,7 +81,7 @@ const setPaginationInfo = ({ currentPage, total }) => {
   if (currentPage) {
     paginationInfo.value.currentPage = currentPage;
   }
-  if (total) {
+  if (total !== undefined && total !== null) {
     paginationInfo.value.total = total;
   }
 };

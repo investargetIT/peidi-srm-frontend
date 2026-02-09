@@ -188,7 +188,16 @@ const initFormData = async (type: "add" | "edit", row?: any) => {
       // 处理联系人信息
       const contactInfo = row?.contactInfo;
       if (contactInfo) {
-        const temp = JSON.parse(contactInfo)?.[0] || {};
+        let temp = {
+          person: "",
+          info: ""
+        };
+        try {
+          temp = JSON.parse(contactInfo)?.[0] || {};
+        } catch (e) {
+          console.warn("解析联系人信息失败:", e);
+        }
+
         // console.log("初始化表单 contactInfo:", temp);
         formData.contactInfo_Person = temp.person || "";
         formData.contactInfo_Info = temp.info || "";

@@ -3,7 +3,7 @@ import { getFileDownLoadPath } from "@/api/user";
 import { formatToken, getToken } from "@/utils/auth";
 import type { UploadInstance, UploadProps } from "element-plus";
 import { ElImage, ElMessage, UploadFile, UploadUserFile } from "element-plus";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 // ==================== 类型定义 ====================
 interface CustomUploadFile extends UploadUserFile {
@@ -245,6 +245,11 @@ const handleError: UploadProps["onError"] = (
 // ==================== 用户交互方法 ====================
 // 移除文件
 const handleRemove = (file: CustomUploadFile) => {
+  // 释放 Blob URL
+  if (file.url?.startsWith("blob:")) {
+    URL.revokeObjectURL(file.url);
+  }
+
   if (file.relativeUrl) {
     const newFileUrls = props.modelValue.filter(
       url => url !== file.relativeUrl
@@ -305,6 +310,14 @@ watch(
 
 onMounted(async () => {
   await initFileList();
+});
+
+onBeforeUnmount(() => {
+  fileList.value.forEach(file => {
+    if (file.url?.startsWith("blob:")) {
+      URL.revokeObjectURL(file.url);
+    }
+  });
 });
 
 // ==================== 暴露方法 ====================

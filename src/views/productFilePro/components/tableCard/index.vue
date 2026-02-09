@@ -76,7 +76,7 @@ const setPaginationInfo = ({ currentPage, total }) => {
   if (currentPage) {
     paginationInfo.value.currentPage = currentPage;
   }
-  if (total) {
+  if (total !== undefined && total !== null) {
     paginationInfo.value.total = total;
   }
 };
