@@ -127,19 +127,23 @@ const handleExportClick = async () => {
         :header-cell-style="{ color: '#0a0a0a' }"
         size="small"
       >
-        <el-table-column prop="companyName" label="公司名称" />
-        <el-table-column prop="companyAddress" label="地址" />
-        <el-table-column prop="contactInfo" label="联系信息">
+        <el-table-column prop="companyName" label="公司名称" width="180px" />
+        <el-table-column prop="companyAddress" label="地址" min-width="150px" />
+        <el-table-column prop="contactInfo" label="联系信息" min-width="150px">
           <template #default="scope">
             <div
               v-for="item in formatContactInfo(scope.row.contactInfo)"
               :key="item.name"
             >
-              {{ item.name }}: {{ item.info }}
+              {{ item.name }} {{ item.info }}
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="supplierGradeName" label="供应商类型" />
+        <el-table-column
+          prop="supplierGradeName"
+          label="供应商类型"
+          min-width="120px"
+        />
 
         <el-table-column fixed="right" label="操作" width="125px">
           <template #default="scope">

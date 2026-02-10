@@ -54,8 +54,7 @@ const formData = reactive({
   agreementExpiry: ""
 });
 const rules = {
-  companyName: [{ required: true, message: "输入公司名称", trigger: "blur" }],
-  companyAddress: [{ required: true, message: "输入公司地址", trigger: "blur" }]
+  companyName: [{ required: true, message: "输入公司名称", trigger: "blur" }]
 };
 
 const handleSubmit = () => {
@@ -91,6 +90,9 @@ const handleSubmit = () => {
 
 const handleClose = () => {
   formRef.value?.resetFields();
+  if (productTreeLoadingMessage.value) {
+    productTreeLoadingMessage.value?.close();
+  }
 };
 
 //#region 产品信息相关逻辑
@@ -341,9 +343,12 @@ defineExpose({
           <PdUpload v-model="formData.contractInfo" accept="" :file-size="50" />
         </el-form-item>
 
-        <!-- 供应商分级 -->
-        <el-form-item label="供应商分级" prop="supplierGradeId">
-          <el-select v-model="formData.supplierGradeId">
+        <!-- 供应商类型 -->
+        <el-form-item label="供应商类型" prop="supplierGradeId">
+          <el-select
+            v-model="formData.supplierGradeId"
+            placeholder="请选择供应商类型"
+          >
             <el-option
               v-for="item in supplierGradeEnum"
               :label="item.value"

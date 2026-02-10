@@ -247,18 +247,18 @@ const routes = [
         }
       }
     ]
-  },
-
-  {
-    path: "/login_",
-    name: "login_",
-    component: () => import("@/views/login/index_.vue"),
-    hidden: true,
-    meta: {
-      rank: 101,
-      showLink: false // 方式4：自定义hideInMenu属性
-    }
   }
+
+  // {
+  //   path: "/login_",
+  //   name: "login_",
+  //   component: () => import("@/views/login/index_.vue"),
+  //   hidden: true,
+  //   meta: {
+  //     rank: 101,
+  //     showLink: false // 方式4：自定义hideInMenu属性
+  //   }
+  // }
 ];
 
 Object.keys(modules).forEach(key => {
