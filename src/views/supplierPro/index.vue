@@ -53,7 +53,8 @@ const fetchSupplierGradeEnum = () => {
   })
     .then((res: any) => {
       if (res?.code == 200) {
-        supplierGradeEnum.value = res?.data || [];
+        supplierGradeEnum.value =
+          res?.data.sort((a: any, b: any) => a.id - b.id) || [];
       } else {
         ElMessage.error("获取供应商等级枚举失败:" + res?.msg);
       }

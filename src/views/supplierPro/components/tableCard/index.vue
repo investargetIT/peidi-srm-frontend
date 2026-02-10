@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatSupplierStatus } from "@/views/supplierPro/utils/index";
 import { Upload } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { ref, watch } from "vue";
@@ -127,8 +128,34 @@ const handleExportClick = async () => {
         :header-cell-style="{ color: '#0a0a0a' }"
         size="small"
       >
-        <el-table-column prop="companyName" label="公司名称" width="180px" />
+        <el-table-column
+          prop="companyName"
+          label="公司名称"
+          min-width="180px"
+        />
+
+        <el-table-column prop="" label="服务状态" min-width="100px">
+          <template #default="scope">
+            <el-tag
+              :type="formatSupplierStatus(scope.row).type"
+              effect="light"
+              size="small"
+            >
+              {{ formatSupplierStatus(scope.row).text }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column
+          prop="supplierGradeName"
+          label="供应商类型"
+          min-width="120px"
+        />
+
+        <el-table-column prop="rating" label="供应商评级" min-width="85px" />
+
         <el-table-column prop="companyAddress" label="地址" min-width="150px" />
+
         <el-table-column prop="contactInfo" label="联系信息" min-width="150px">
           <template #default="scope">
             <div
@@ -139,18 +166,18 @@ const handleExportClick = async () => {
             </div>
           </template>
         </el-table-column>
-        <el-table-column
-          prop="supplierGradeName"
-          label="供应商类型"
-          min-width="120px"
-        />
 
         <el-table-column fixed="right" label="操作" width="125px">
           <template #default="scope">
             <el-button link type="primary" @click="handleEditClick(scope.row)">
               编辑
             </el-button>
-            <el-button link type="danger" @click="handleDeleteClick(scope.row)">
+            <el-button
+              link
+              type="danger"
+              @click="handleDeleteClick(scope.row)"
+              v-if="false"
+            >
               删除
             </el-button>
           </template>

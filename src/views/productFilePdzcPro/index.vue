@@ -10,6 +10,7 @@ import {
 import { ElMessage } from "element-plus";
 import { onMounted, ref } from "vue";
 import DetailDialog from "./components/detailDialog/index.vue";
+import RulesCard from "./components/priceRulesCard/index.vue";
 import SearchCard from "./components/searchCard/index.vue";
 import TableCard from "./components/tableCard/index.vue";
 
@@ -194,6 +195,10 @@ onMounted(async () => {
 <template>
   <div>
     <div>
+      <RulesCard type="main" />
+    </div>
+
+    <div class="mt-[20px]">
       <SearchCard
         ref="searchCardRef"
         :supplierList="supplierList"

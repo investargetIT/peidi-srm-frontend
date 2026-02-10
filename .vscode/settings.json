@@ -26,7 +26,7 @@
   },
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
-    // "source.organizeImports": "explicit"
+    "source.organizeImports": "explicit"
   },
   "iconify.excludes": ["el"],
   "vscodeCustomCodeColor.highlightValue": [

@@ -73,10 +73,11 @@ export const exportAllSupplier = async () => {
 
       return {
         companyName: item.companyName || "",
+        supplierGradeName: item.supplierGradeName || "",
+        rating: item.rating || "",
         companyAddress: item.companyAddress || "",
         contactInfo_Person: contactInfo_Person || "",
         contactInfo_Info: contactInfo_Info || "",
-        supplierGradeName: item.supplierGradeName || "",
         supplierProductName: (item.supplierProductName || []).join(",")
       };
     });
@@ -86,10 +87,11 @@ export const exportAllSupplier = async () => {
     // ============================
     const columns = [
       { prop: "companyName", label: "公司名称", width: 25 },
+      { prop: "supplierGradeName", label: "供应商类型", width: 15 },
+      { prop: "rating", label: "供应商评级", width: 15 },
       { prop: "companyAddress", label: "地址", width: 30 },
       { prop: "contactInfo_Person", label: "联系人", width: 15 },
       { prop: "contactInfo_Info", label: "联系方式", width: 20 },
-      { prop: "supplierGradeName", label: "供应商类型", width: 15 },
       { prop: "supplierProductName", label: "供应产品", width: 40 }
     ];
 

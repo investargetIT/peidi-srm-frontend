@@ -4,6 +4,7 @@ import { formatToken, getToken } from "@/utils/auth";
 import type { UploadInstance, UploadProps } from "element-plus";
 import { ElImage, ElMessage, UploadFile, UploadUserFile } from "element-plus";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { generateID } from "./utils/index";
 
 // ==================== 类型定义 ====================
 interface CustomUploadFile extends UploadUserFile {
@@ -73,6 +74,19 @@ const getFileUrl = async (relativeUrl: string) => {
     console.error("获取文件地址失败:", error);
     return "";
   }
+};
+
+// 生成“xxx_唯一字符串.扩展名”的新文件名
+const getNewFileName = (fileName: string): string => {
+  const lastDotIndex = fileName.lastIndexOf(".");
+  if (lastDotIndex === -1) {
+    // 没有扩展名的情况，直接加后缀
+    return `${fileName}_${generateID()}`;
+  }
+
+  const nameWithoutExt = fileName.slice(0, lastDotIndex);
+  const ext = fileName.slice(lastDotIndex); // 比如 ".png"
+  return `${nameWithoutExt}_${generateID()}${ext}`;
 };
 
 // 判断文件类型
@@ -165,21 +179,34 @@ const updateFileStatus = (
 };
 
 // ==================== 上传处理方法 ====================
-// 上传前验证
+// 上传前验证与重命名
 const beforeUpload: UploadProps["beforeUpload"] = rawFile => {
   const isLtSize = rawFile.size / 1024 / 1024 < props.fileSize;
   if (!isLtSize) {
     ElMessage.error(`文件大小不能超过 ${props.fileSize}MB!`);
-    return false;
+    return Promise.reject(new Error("Size limit exceeded"));
   }
 
   const isLtNameLength = rawFile.name.length <= props.fileNameLength;
   if (!isLtNameLength) {
     ElMessage.error(`文件名长度不能超过 ${props.fileNameLength} 个字符!`);
-    return false;
+    return Promise.reject(new Error("Name length limit exceeded"));
   }
 
-  return true;
+  // 1. 从 rawFile 上取出我们在 onChange 里挂载的新名字
+  const newName = (rawFile as any).customNewName;
+
+  // 如果还没算好名字（极少见情况）， fallback 一下
+  const finalName = newName || getNewFileName(rawFile.name);
+
+  // 2. 创建新文件对象用于上传
+  const newFile = new File([rawFile], finalName, {
+    type: rawFile.type,
+    lastModified: rawFile.lastModified
+  });
+
+  // 3. 【关键】返回 Promise<File>，el-upload 会用它上传（服务器收到新名字）
+  return Promise.resolve(newFile);
 };
 
 // 文件状态改变
@@ -187,11 +214,25 @@ const handleChange: UploadProps["onChange"] = (uploadFile, uploadFiles) => {
   const index = findFileIndex(uploadFile);
 
   if (index === -1 && uploadFile.status === "ready") {
+    const rawFile = uploadFile.raw;
+    if (!rawFile) return;
+
+    // 1. 生成新文件名
+    const newName = getNewFileName(rawFile.name);
+
+    // 2. 【关键】将新名字挂载到 rawFile 对象上，以便 beforeUpload 能获取到
+    // (beforeUpload 只能拿到 rawFile，拿不到 uploadFile 对象本身，只能这样传值)
+    (rawFile as any).customNewName = newName;
+    // 同时把 uid 也挂载上去，方便追踪
+    (rawFile as any).uid = uploadFile.uid;
+
+    // 3. 【关键】更新 UI 列表显示新名字
     const newFile: CustomUploadFile = {
       ...uploadFile,
+      name: newName, // UI 立即显示新名字
       status: "uploading",
       percentage: 0,
-      fileType: getFileType(uploadFile.name || "")
+      fileType: getFileType(newName)
     };
     fileList.value.push(newFile);
   }
@@ -200,7 +241,11 @@ const handleChange: UploadProps["onChange"] = (uploadFile, uploadFiles) => {
 // 上传进度
 const handleProgress: UploadProps["onProgress"] = (event, uploadFile) => {
   const index = findFileIndex(uploadFile);
-  updateFileStatus(index, { percentage: event.percent, status: "uploading" });
+
+  if (index !== -1) {
+    // 不需要再改 name，handleChange 已经改过
+    updateFileStatus(index, { percentage: event.percent, status: "uploading" });
+  }
 };
 
 // 上传成功
@@ -214,6 +259,7 @@ const handleSuccess: UploadProps["onSuccess"] = (
     const index = findFileIndex(uploadFile);
 
     updateFileStatus(index, {
+      // name 不需要再改了，handleChange 里已经是新的了
       url: URL.createObjectURL(uploadFile.raw!),
       relativeUrl,
       status: "success",

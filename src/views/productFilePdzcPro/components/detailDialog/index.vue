@@ -3,6 +3,7 @@ import PdUpload from "@/components/PdUpload/index.vue";
 import { ElMessageBox } from "element-plus";
 import { nextTick, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import RulesCard from "../../components/priceRulesCard/index.vue";
 
 const router = useRouter();
 
@@ -189,24 +190,28 @@ const handleAddSupplier = () => {
           <el-input v-model="formData.referenceCost" />
         </el-form-item>
 
-        <!-- 补充协议 -->
-        <el-form-item label="补充协议" prop="supplementaryAgreement">
-          <PdUpload
-            v-model="formData.supplementaryAgreement"
-            accept=""
-            :file-size="50"
-          />
-        </el-form-item>
+        <div class="mb-[20px]">
+          <RulesCard type="detail">
+            <!-- 补充协议 -->
+            <el-form-item label="补充协议" prop="supplementaryAgreement">
+              <PdUpload
+                v-model="formData.supplementaryAgreement"
+                accept=""
+                :file-size="50"
+              />
+            </el-form-item>
 
-        <!-- 价格变动原因 -->
-        <el-form-item label="价格变动原因" prop="priceChangeReason">
-          <el-input
-            v-model="formData.priceChangeReason"
-            placeholder="请输入价格变动原因"
-            type="textarea"
-            :rows="3"
-          />
-        </el-form-item>
+            <!-- 价格变动原因 -->
+            <el-form-item label="价格变动原因" prop="priceChangeReason">
+              <el-input
+                v-model="formData.priceChangeReason"
+                placeholder="请输入价格变动原因"
+                type="textarea"
+                :rows="3"
+              />
+            </el-form-item>
+          </RulesCard>
+        </div>
 
         <el-form-item>
           <div class="w-full flex justify-end">
