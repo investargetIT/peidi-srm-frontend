@@ -32,7 +32,7 @@ const formType = ref<"add" | "edit">("add");
 const formRef = ref();
 const formData = reactive({
   id: "",
-  supplierProduct: [], // 供应商ID
+  supplierId: "", // 供应商ID
   materialCode: "", // 料号
   productName: "", // 品名
   specification: "", // 规格
@@ -83,9 +83,6 @@ const initFormData = (type: "add" | "edit", row?: any) => {
     if (row) {
       // console.log("初始化表单:", row);
       Object.assign(formData, row);
-
-      // 供应商逻辑：supplierList用于回显 supplierProduct用于修改
-      formData.supplierProduct = row?.supplierList?.map(item => item.id) ?? [];
     }
   });
 };
@@ -116,6 +113,7 @@ const handleAddSupplier = () => {
       append-to-body
       align-center
       @close="handleClose"
+      :close-on-click-modal="false"
     >
       <el-form
         ref="formRef"
@@ -124,22 +122,20 @@ const handleAddSupplier = () => {
         :rules="rules"
       >
         <!-- 供应商 -->
-        <el-form-item label="供应商" prop="supplierProduct">
+        <el-form-item label="供应商" prop="supplierId">
           <el-space>
             <el-select
-              v-model="formData.supplierProduct"
-              placeholder="请选择供应商（最多选择1个）"
+              v-model="formData.supplierId"
+              placeholder="请选择供应商"
               clearable
               filterable
               style="width: 345px"
-              multiple
-              :multiple-limit="1"
             >
               <el-option
                 v-for="item in props.supplierList"
                 :key="item.id"
                 :label="item.companyName"
-                :value="item.id"
+                :value="item.id.toString()"
               />
             </el-select>
             <el-button type="primary" size="default" @click="handleAddSupplier">
@@ -215,6 +211,7 @@ const handleAddSupplier = () => {
 
         <el-form-item>
           <div class="w-full flex justify-end">
+            <el-button @click="visible = false"> 取消 </el-button>
             <el-button type="primary" @click="handleSubmit">
               {{ formType === "add" ? "添加" : "编辑" }}
             </el-button>

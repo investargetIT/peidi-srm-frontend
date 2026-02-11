@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import TipDialog from "@/views/supplierPro/components/tipDialogs/index.vue";
 import { formatSupplierStatus } from "@/views/supplierPro/utils/index";
+import { Delete, Edit, Plus } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { ref, watch } from "vue";
 import StatusCircle from "./statusCircle.vue";
 
 export type TagType = "success" | "warning" | "info" | "primary" | "danger";
+
+const tipDialogRef = ref();
 
 const props = defineProps({
   tableData: {
@@ -26,6 +30,10 @@ const props = defineProps({
   fetchProductPage: {
     type: Function,
     required: true
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -174,12 +182,12 @@ const getIsContractPriceStatus = (row: any) => {
 
 // 获取供应商详细信息
 const getSupplierInfo = (row: any) => {
-  const id = row.supplierList?.[0]?.id ?? null;
-  if (id === null) {
+  const id = row.supplierId;
+  if (id === null || id === "") {
     return null;
   }
   if (props.supplierList && props.supplierList.length > 0) {
-    return props.supplierList.find(item => item.id === id);
+    return props.supplierList.find(item => item.id.toString() === id);
   }
   return null;
 };
@@ -190,15 +198,33 @@ const getSupplierInfo = (row: any) => {
     <el-card shadow="never" style="border-radius: 10px">
       <div class="flex justify-between mb-[20px]">
         <div class="text-[#0a0a0a]">智创产品列表</div>
-        <el-button type="primary" @click="handleAddClick"> 添加产品 </el-button>
+        <el-button type="primary" @click="handleAddClick" :icon="Plus">
+          添加产品
+        </el-button>
       </div>
 
       <el-table
         :data="props.tableData"
         :header-cell-style="{ color: '#0a0a0a' }"
         size="small"
+        :style="{ height: 'calc(100vh - 330px)', minHeight: '500px' }"
+        v-loading="props.loading"
+        element-loading-text="加载中..."
       >
-        <el-table-column prop="supplierList" label="供应商" min-width="150px">
+        <el-table-column prop="supplierName" label="供应商" min-width="150px">
+          <template #header>
+            <div class="flex items-center">
+              <span class="mr-[3px]">供应商</span>
+              <el-icon
+                class="pb-[3px] cursor-pointer"
+                size="16"
+                @click="tipDialogRef?.show('productFilePdzc_supplierInfo')"
+              >
+                <QuestionFilled />
+              </el-icon>
+            </div>
+          </template>
+
           <template #default="scope">
             <div>
               <div class="flex items-center mb-[5px]">
@@ -209,9 +235,7 @@ const getSupplierInfo = (row: any) => {
                   "
                 />
                 <div class="ml-[5px]">
-                  <span>{{
-                    scope.row.supplierList?.[0]?.companyName ?? ""
-                  }}</span>
+                  <span>{{ scope.row.supplierName }}</span>
                 </div>
               </div>
               <el-space wrap>
@@ -222,7 +246,7 @@ const getSupplierInfo = (row: any) => {
                   {{ getHasSignAgreementStatus(scope.row).text }}
                 </el-tag>
                 <el-tag size="small" type="primary">
-                  {{ getSupplierInfo(scope.row)?.rating || "-" }}
+                  {{ scope.row.rating }}
                 </el-tag>
               </el-space>
             </div>
@@ -236,6 +260,18 @@ const getSupplierInfo = (row: any) => {
         <el-table-column prop="referenceCost" label="价格" />
 
         <el-table-column prop="" label="协议价状态">
+          <template #header>
+            <div class="flex items-center">
+              <span class="mr-[3px]">协议价状态</span>
+              <el-icon
+                class="pb-[3px] cursor-pointer"
+                size="16"
+                @click="tipDialogRef?.show('productFilePdzc_contractPrice')"
+              >
+                <QuestionFilled />
+              </el-icon>
+            </div>
+          </template>
           <template #default="scope">
             <el-tag :type="getIsContractPriceStatus(scope.row).type">
               {{ getIsContractPriceStatus(scope.row).text }}
@@ -245,12 +281,21 @@ const getSupplierInfo = (row: any) => {
 
         <el-table-column fixed="right" label="操作" width="125px">
           <template #default="scope">
-            <el-button link type="primary" @click="handleEditClick(scope.row)">
-              编辑
-            </el-button>
-            <el-button link type="danger" @click="handleDeleteClick(scope.row)">
-              删除
-            </el-button>
+            <el-space wrap :size="16">
+              <el-button
+                link
+                type="primary"
+                @click="handleEditClick(scope.row)"
+                :icon="Edit"
+              />
+
+              <el-button
+                link
+                type="danger"
+                @click="handleDeleteClick(scope.row)"
+                :icon="Delete"
+              />
+            </el-space>
           </template>
         </el-table-column>
       </el-table>
@@ -267,5 +312,7 @@ const getSupplierInfo = (row: any) => {
         />
       </div>
     </el-card>
+
+    <TipDialog ref="tipDialogRef" />
   </div>
 </template>

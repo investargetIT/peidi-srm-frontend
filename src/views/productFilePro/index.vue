@@ -22,6 +22,7 @@ const PARENT_CATEGORY_NAME = (router.name as string) || "";
 //@ts-ignore
 const USER_ID = storageLocal().getItem("dataSource")?.id || null;
 
+const loading = ref(true);
 const allCateData = ref([]);
 const categoryNameList = ref([]);
 const supplierList = ref([]);
@@ -119,6 +120,7 @@ const fetchManageLevelEnum = () => {
 };
 
 const fetchProductPage = () => {
+  loading.value = true;
   return getPagePd({
     pageNo: tableCardRef.value?.getPaginationInfo()?.currentPage || 1,
     pageSize: tableCardRef.value?.getPaginationInfo()?.pageSize || 10,
@@ -149,6 +151,9 @@ const fetchProductPage = () => {
     })
     .catch(error => {
       ElMessage.error("获取工厂产品列表失败:" + error.message);
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -158,7 +163,6 @@ const fetchAdd = (data: any, callback?: () => void) => {
   addPd({
     ...data,
     type: "factory",
-    supplierId: data.supplierProduct.join(","),
     userId: USER_ID
   })
     .then((res: any) => {
@@ -181,7 +185,6 @@ const fetchUpdate = (data: any, callback?: () => void) => {
   updatePd({
     ...data,
     type: "factory",
-    supplierId: data.supplierProduct.join(","),
     userId: USER_ID
   })
     .then((res: any) => {
@@ -247,6 +250,7 @@ onMounted(async () => {
         :openDetailDialog="openDetailDialog"
         :deleteFn="fetchDelete"
         :fetchProductPage="fetchProductPage"
+        :loading="loading"
       />
     </div>
 

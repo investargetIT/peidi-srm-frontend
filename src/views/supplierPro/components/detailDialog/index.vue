@@ -283,6 +283,7 @@ defineExpose({
       top="5vh"
       append-to-body
       @close="handleClose"
+      :close-on-click-modal="false"
     >
       <el-form
         ref="formRef"
@@ -385,6 +386,7 @@ defineExpose({
               <el-select
                 v-model="formData.supplierGradeId"
                 placeholder="请选择供应商类型"
+                clearable
               >
                 <el-option
                   v-for="item in supplierGradeEnum"
@@ -399,7 +401,7 @@ defineExpose({
               <el-select
                 v-model="formData.rating"
                 placeholder="请选择供应商评级"
-                :disabled="formData.ratingFile.length === -1"
+                :disabled="formData.ratingFile.length === 0"
               >
                 <el-option
                   v-for="item in ['A', 'B', 'C', 'D']"
@@ -439,13 +441,15 @@ defineExpose({
               </span>
             </el-form-item>
 
-            <el-form-item label="" prop="signAgreement">
-              <PdUpload
-                v-model="formData.signAgreement"
-                accept=""
-                :file-size="50"
-              />
-            </el-form-item>
+            <div v-show="formData.hasSignAgreement">
+              <el-form-item label="" prop="signAgreement">
+                <PdUpload
+                  v-model="formData.signAgreement"
+                  accept=""
+                  :file-size="50"
+                />
+              </el-form-item>
+            </div>
 
             <div v-show="formData.hasSignAgreement">
               <!-- 年框协议起始日期 -->
@@ -471,6 +475,7 @@ defineExpose({
 
         <el-form-item>
           <div class="w-full flex justify-end">
+            <el-button @click="visible = false"> 取消 </el-button>
             <el-button type="primary" @click="handleSubmit">
               {{ formType === "add" ? "添加" : "编辑" }}
             </el-button>

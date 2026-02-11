@@ -14,6 +14,7 @@ import RulesCard from "./components/priceRulesCard/index.vue";
 import SearchCard from "./components/searchCard/index.vue";
 import TableCard from "./components/tableCard/index.vue";
 
+const loading = ref(true);
 const supplierList = ref([]);
 const specGoodsList = ref([]);
 const productTableData = ref([]);
@@ -86,6 +87,7 @@ const fetchSpecGoodsList = () => {
 };
 
 const fetchProductPage = () => {
+  loading.value = true;
   return getPagePd({
     pageNo: tableCardRef.value?.getPaginationInfo()?.currentPage || 1,
     pageSize: tableCardRef.value?.getPaginationInfo()?.pageSize || 10,
@@ -116,6 +118,9 @@ const fetchProductPage = () => {
     })
     .catch(error => {
       ElMessage.error("获取智创产品列表失败:" + error.message);
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -124,8 +129,7 @@ const fetchAdd = (data: any, callback?: () => void) => {
   // return;
   addPd({
     ...data,
-    type: "pdzc",
-    supplierId: data.supplierProduct.join(",") // 用于筛选供应商
+    type: "pdzc"
   })
     .then((res: any) => {
       if (res?.code == 200) {
@@ -145,8 +149,7 @@ const fetchUpdate = (data: any, callback?: () => void) => {
   // console.log("更新数据:", data);
   // return;
   updatePd({
-    ...data,
-    supplierId: data.supplierProduct.join(",")
+    ...data
   })
     .then((res: any) => {
       if (res?.code == 200) {
@@ -214,6 +217,7 @@ onMounted(async () => {
         :openDetailDialog="openDetailDialog"
         :deleteFn="fetchDelete"
         :fetchProductPage="fetchProductPage"
+        :loading="loading"
       />
     </div>
 

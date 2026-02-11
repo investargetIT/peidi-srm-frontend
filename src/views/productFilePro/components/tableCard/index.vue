@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Delete, Edit, Plus } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { ref, watch } from "vue";
 
@@ -22,6 +23,10 @@ const props = defineProps({
   fetchProductPage: {
     type: Function,
     required: true
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -92,7 +97,9 @@ defineExpose({
     <el-card shadow="never" style="border-radius: 10px">
       <div class="flex justify-between mb-[20px]">
         <div class="text-[#0a0a0a]">工厂产品列表</div>
-        <el-button type="primary" @click="handleAddClick"> 添加产品 </el-button>
+        <el-button type="primary" @click="handleAddClick" :icon="Plus">
+          添加产品
+        </el-button>
       </div>
 
       <el-table
@@ -100,6 +107,9 @@ defineExpose({
         :header-cell-style="{ color: '#0a0a0a' }"
         size="small"
         :row-class-name="tableRowClassName"
+        :style="{ height: 'calc(100vh - 330px)', minHeight: '500px' }"
+        v-loading="props.loading"
+        element-loading-text="加载中..."
       >
         <el-table-column fixed prop="materialCode" label="料号" />
         <el-table-column prop="userInfo" label="信息维护人" width="150px" />
@@ -112,40 +122,26 @@ defineExpose({
         <el-table-column prop="referenceCost" label="价格" />
         <el-table-column prop="lastQuoteDate" label="最近一次报价时间" />
         <el-table-column prop="supplyAllYea" label="常年正常供应" />
-        <el-table-column prop="supplierName" label="供应商">
-          <template #default="scope">
-            <div>
-              <div
-                v-for="supplierId in scope.row.supplierProduct"
-                :key="supplierId"
-              >
-                {{
-                  props.supplierList.find(item => item.id === supplierId)
-                    ?.companyName || supplierId
-                }}
-              </div>
-            </div>
-          </template>
-        </el-table-column>
+        <el-table-column prop="supplierName" label="供应商" />
 
         <el-table-column fixed="right" label="操作" width="125px">
           <template #default="scope">
-            <el-button
-              link
-              type="primary"
-              @click="handleEditClick(scope.row)"
-              :disabled="!scope.row.enable"
-            >
-              编辑
-            </el-button>
-            <el-button
-              link
-              type="danger"
-              @click="handleDeleteClick(scope.row)"
-              :disabled="!scope.row.enable"
-            >
-              删除
-            </el-button>
+            <el-space wrap :size="16">
+              <el-button
+                link
+                type="primary"
+                @click="handleEditClick(scope.row)"
+                :disabled="!scope.row.enable"
+                :icon="Edit"
+              />
+              <el-button
+                link
+                type="danger"
+                @click="handleDeleteClick(scope.row)"
+                :disabled="!scope.row.enable"
+                :icon="Delete"
+              />
+            </el-space>
           </template>
         </el-table-column>
       </el-table>

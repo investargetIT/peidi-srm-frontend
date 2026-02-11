@@ -116,10 +116,11 @@ const fetchAddCate = (data: any, callback?: () => void) => {
   // console.log("添加分类数据:", data);
   // return;
   addCate(data)
-    .then((res: any) => {
+    .then(async (res: any) => {
       if (res?.code == 200) {
         ElMessage.success("添加分类成功");
         callback?.();
+        await fetchAllCate();
         fetchCategoryPage();
       } else {
         ElMessage.error("添加分类失败:" + res?.msg);

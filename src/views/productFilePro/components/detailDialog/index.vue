@@ -39,7 +39,7 @@ const formData = reactive({
   categoryId: "",
   managementLevelId: "",
   productName: "",
-  supplierProduct: [],
+  supplierId: "",
   specification: "",
   unit: "",
   supplyAllYea: "",
@@ -122,8 +122,8 @@ const initFormData = (type: "add" | "edit", row?: any) => {
       // console.log("初始化表单:", row);
       Object.assign(formData, row);
 
-      // 回显供应商
-      formData.supplierProduct = (row?.supplierList || []).map(item => item.id);
+      // 不传harvestSeason默认会变成0，0月不展示
+      formData.harvestSeason = formData.harvestSeason || "";
     }
   });
 };
@@ -154,6 +154,7 @@ const handleAddSupplier = () => {
       append-to-body
       align-center
       @close="handleClose"
+      :close-on-click-modal="false"
     >
       <el-form
         ref="formRef"
@@ -211,21 +212,20 @@ const handleAddSupplier = () => {
         </el-form-item>
 
         <!-- 供应商 -->
-        <el-form-item label="供应商" prop="supplierProduct">
+        <el-form-item label="供应商" prop="supplierId">
           <el-space>
             <el-select
-              v-model="formData.supplierProduct"
+              v-model="formData.supplierId"
               placeholder="请选择供应商"
               clearable
               filterable
               style="width: 345px"
-              multiple
             >
               <el-option
                 v-for="item in supplierList"
                 :key="item.id"
                 :label="item.companyName"
-                :value="item.id"
+                :value="item.id.toString()"
               />
             </el-select>
             <el-button type="primary" size="default" @click="handleAddSupplier">
@@ -277,6 +277,7 @@ const handleAddSupplier = () => {
 
         <el-form-item>
           <div class="w-full flex justify-end">
+            <el-button @click="visible = false"> 取消 </el-button>
             <el-button type="primary" @click="handleSubmit">
               {{ formType === "add" ? "添加" : "编辑" }}
             </el-button>

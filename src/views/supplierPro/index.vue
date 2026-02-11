@@ -15,6 +15,7 @@ import DetailDialog from "./components/detailDialog/index.vue";
 import SearchCard from "./components/searchCard/index.vue";
 import TableCard from "./components/tableCard/index.vue";
 
+const loading = ref(false);
 const supplierGradeEnum = ref([]);
 const productTree = ref([]);
 const productTreeLoading = ref(true);
@@ -34,11 +35,20 @@ const getSearchStr = () => {
       searchValue: `${searchInfo.companyName}`
     });
   }
-  if (searchInfo?.contactInfo) {
+
+  if (searchInfo?.supplierGradeId) {
     searchStr.push({
-      searchName: "contactInfo",
-      searchType: "like",
-      searchValue: `${searchInfo.contactInfo}`
+      searchName: "supplierGradeId",
+      searchType: "equals",
+      searchValue: `\"${searchInfo.supplierGradeId}\"`
+    });
+  }
+
+  if (searchInfo?.rating) {
+    searchStr.push({
+      searchName: "rating",
+      searchType: "equals",
+      searchValue: `\"${searchInfo.rating}\"`
     });
   }
 
@@ -65,6 +75,7 @@ const fetchSupplierGradeEnum = () => {
 };
 
 const fetchSupplierList = () => {
+  loading.value = true;
   return getPageSupplier({
     pageNo: tableCardRef.value?.getPaginationInfo()?.currentPage || 1,
     pageSize: tableCardRef.value?.getPaginationInfo()?.pageSize || 10,
@@ -93,6 +104,9 @@ const fetchSupplierList = () => {
     })
     .catch((error: any) => {
       ElMessage.error("获取供应商列表失败:" + error?.message);
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -287,7 +301,12 @@ onMounted(async () => {
 <template>
   <div>
     <div>
-      <SearchCard ref="searchCardRef" :fetchSupplierList="fetchSupplierList" />
+      <SearchCard
+        ref="searchCardRef"
+        :fetchSupplierList="fetchSupplierList"
+        :loading="loading"
+        :supplierGradeEnum="supplierGradeEnum"
+      />
     </div>
 
     <div class="mt-[20px]">
@@ -297,6 +316,7 @@ onMounted(async () => {
         :openDetailDialog="openDetailDialog"
         :deleteFn="fetchDeleteSupplier"
         :fetchSupplierList="fetchSupplierList"
+        :loading="loading"
       />
     </div>
 

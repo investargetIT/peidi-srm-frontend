@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { Refresh, Search } from "@element-plus/icons-vue";
 import { reactive, ref } from "vue";
 
 const props = defineProps({
   fetchSupplierList: {
     type: Function,
+    required: true
+  },
+  supplierGradeEnum: {
+    type: Array as PropType<any[]>,
     required: true
   }
 });
@@ -11,7 +16,8 @@ const props = defineProps({
 const searchInfoRef = ref();
 const searchInfo = reactive({
   companyName: "",
-  contactInfo: ""
+  supplierGradeId: "",
+  rating: ""
 });
 
 const handleSearchClick = () => {
@@ -43,17 +49,39 @@ defineExpose({
             clearable
           />
         </el-form-item>
-        <el-form-item label="联系信息" prop="contactInfo">
-          <el-input
-            v-model="searchInfo.contactInfo"
-            placeholder="请输入联系信息"
+        <el-form-item label="供应商类型" prop="supplierGradeId">
+          <el-select
+            v-model="searchInfo.supplierGradeId"
+            placeholder="请选择供应商类型"
             clearable
-          />
+          >
+            <el-option
+              v-for="item in supplierGradeEnum"
+              :label="item.value"
+              :value="item.id.toString()"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="供应商评级" prop="rating">
+          <el-select
+            v-model="searchInfo.rating"
+            placeholder="请选择供应商评级"
+            clearable
+          >
+            <el-option
+              v-for="item in ['A', 'B', 'C', 'D']"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="handleSearchClick">搜索</el-button>
-          <el-button @click="handleResetClick">重置</el-button>
+          <el-button type="primary" @click="handleSearchClick" :icon="Search">
+            搜索
+          </el-button>
+          <el-button @click="handleResetClick" :icon="Refresh">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>

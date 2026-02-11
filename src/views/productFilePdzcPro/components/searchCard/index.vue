@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Refresh, Search } from "@element-plus/icons-vue";
 import { reactive, ref } from "vue";
 
 const props = defineProps({
@@ -61,8 +62,10 @@ defineExpose({
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSearchClick">搜索</el-button>
-          <el-button @click="handleResetClick">重置</el-button>
+          <el-button type="primary" @click="handleSearchClick" :icon="Search">
+            搜索
+          </el-button>
+          <el-button @click="handleResetClick" :icon="Refresh">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
