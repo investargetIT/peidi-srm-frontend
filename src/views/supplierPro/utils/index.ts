@@ -60,6 +60,11 @@ export const formatSupplierStatus = (row: any) => {
     }
     return formatSupplierStatus("有效", "success");
   }
+
+  // 特例: 年框起始时间 > 当前时间
+  if (agreementExpiryStart.isAfter(currentTime)) {
+    return formatSupplierStatus("未签年框", "info");
+  }
 };
 
 export const getPdSvg = (name: string) => {

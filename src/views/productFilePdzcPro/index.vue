@@ -47,6 +47,22 @@ const getSearchStr = () => {
   return JSON.stringify(searchStr);
 };
 //#endregion
+
+//#region 排序相关
+const sortStr = ref<{ sortName: string; sortType: string }[]>([
+  { sortName: "id", sortType: "desc" }
+]);
+// 赋值排序参数
+const setSortStr = (sort: { sortName: string; sortType: string }[]) => {
+  // console.log("触发排序:", sort);
+  if (!sort || sort.length === 0) {
+    return;
+  }
+  sortStr.value = [...sortStr.value, ...sort];
+  fetchProductPage();
+};
+//#endregion
+
 //#region 请求相关
 const fetchSupplierList = () => {
   return getPageSupplier({
@@ -92,7 +108,7 @@ const fetchProductPage = () => {
     pageNo: tableCardRef.value?.getPaginationInfo()?.currentPage || 1,
     pageSize: tableCardRef.value?.getPaginationInfo()?.pageSize || 10,
     searchStr: getSearchStr(),
-    sortStr: JSON.stringify([{ sortName: "id", sortType: "desc" }])
+    sortStr: JSON.stringify(sortStr.value)
   })
     .then((res: any) => {
       // console.log("智创产品列表：", res);
@@ -218,6 +234,7 @@ onMounted(async () => {
         :deleteFn="fetchDelete"
         :fetchProductPage="fetchProductPage"
         :loading="loading"
+        :setSortStr="setSortStr"
       />
     </div>
 

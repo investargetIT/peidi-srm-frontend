@@ -44,7 +44,7 @@ defineExpose({
             >
               绿色 -有效期内：
             </span>
-            年框已传，且 协议起始日期 < 当前时间 < 协议到期时间
+            年框已传，且 协议起始日期 ≤ 当前时间 ≤ 协议到期时间
           </li>
           <li>
             <span
@@ -53,8 +53,8 @@ defineExpose({
             >
               黄色 -临近到期：
             </span>
-            年框已传，且 协议起始日期 < 当前时间 < 协议到期时间，且
-            (协议到期时间 - 30天) < 当前时间
+            年框已传，且 协议起始日期 ≤ 当前时间 ≤ 协议到期时间，且
+            (协议到期时间 - 30天) ≤ 当前时间
           </li>
           <li>
             <span
@@ -66,6 +66,9 @@ defineExpose({
             年框已传，且 协议到期时间 < 当前时间
           </li>
         </ul>
+        <p class="font-bold mb-[10px] mt-[10px]">
+          特例：协议起始日期 > 当前时间 视为未签年框
+        </p>
       </div>
 
       <div
@@ -74,11 +77,8 @@ defineExpose({
       >
         <p class="font-bold mb-[10px]">协议价状态判断条件：</p>
         <ul class="list-disc list-inside space-y-1">
-          <li>报价情况1：未签年框</li>
-          <li>
-            报价情况2：<strong>补充协议 </strong>有上传文件 但
-            <strong> 价格变动原因 </strong>未填写
-          </li>
+          <li>判定为报价的情况1：未签年框 或 年框已过期</li>
+          <li>判定为报价的情况2：<strong>补充协议 </strong>未上传文件</li>
           <li>未满足以上条件，显示<strong> 协议价</strong></li>
           <li>若无法获取该供应商信息，显示<strong> 协议价信息错误</strong></li>
         </ul>

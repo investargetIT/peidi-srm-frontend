@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import TipDialog from "@/views/supplierPro/components/tipDialogs/index.vue";
 import { formatSupplierStatus } from "@/views/supplierPro/utils/index";
-import { Delete, Edit, Plus } from "@element-plus/icons-vue";
+import { Delete, Edit, Plus, RefreshRight } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { ref, watch } from "vue";
 import StatusCircle from "./statusCircle.vue";
+import dayjs from "dayjs";
 
 export type TagType = "success" | "warning" | "info" | "primary" | "danger";
 
@@ -34,6 +35,10 @@ const props = defineProps({
   loading: {
     type: Boolean,
     default: false
+  },
+  setSortStr: {
+    type: Function,
+    required: true
   }
 });
 
@@ -139,18 +144,18 @@ const getHasSignAgreementStatus = (row: any) => {
 };
 /**
  * 协议价判断条件：
- * 1. 补充协议有内容 但是 价格变动原因没有内容 --> 报价
- * 2. 未签年框 --> 报价
+ * 1. 补充协议没有内容 --> 报价
+ * 2. 未签年框 或 年框已过期 --> 报价
  * 3. 其余 --> 协议价
  * @param row
  */
 const getIsContractPriceStatus = (row: any) => {
   // 补充协议
   const supplementaryAgreement = row?.supplementaryAgreement || [];
-  // 价格变动原因
-  const priceChangeReason = row?.priceChangeReason || "";
+  // // 价格变动原因
+  // const priceChangeReason = row?.priceChangeReason || "";
 
-  if (supplementaryAgreement.length > 0 && priceChangeReason === "") {
+  if (supplementaryAgreement.length === 0) {
     return {
       text: "报价",
       type: "info" as TagType
@@ -161,13 +166,36 @@ const getIsContractPriceStatus = (row: any) => {
   if (supplierInfo) {
     const hasSignAgreement = supplierInfo?.hasSignAgreement;
     const signAgreement = supplierInfo?.signAgreement || [];
-    const isSign = hasSignAgreement && signAgreement.length > 0;
-    if (!isSign) {
-      return {
-        text: "报价",
-        type: "info" as TagType
-      };
-    } else {
+    const agreementExpiryStart = supplierInfo?.agreementExpiryStart
+      ? dayjs(supplierInfo?.agreementExpiryStart)
+      : null;
+    const agreementExpiryEnd = supplierInfo?.agreementExpiryEnd
+      ? dayjs(supplierInfo?.agreementExpiryEnd)
+      : null;
+    const currentTime = dayjs();
+
+    if (agreementExpiryStart && agreementExpiryEnd) {
+      // 年框过期
+      if (currentTime.isAfter(agreementExpiryEnd)) {
+        return {
+          text: "报价",
+          type: "info" as TagType
+        };
+      }
+      // 未签年框
+      if (!hasSignAgreement || signAgreement.length === 0) {
+        return {
+          text: "报价",
+          type: "info" as TagType
+        };
+      }
+      if (agreementExpiryStart.isAfter(currentTime)) {
+        return {
+          text: "报价",
+          type: "info" as TagType
+        };
+      }
+
       return {
         text: "协议价",
         type: "success" as TagType
@@ -191,6 +219,41 @@ const getSupplierInfo = (row: any) => {
   }
   return null;
 };
+
+//#region 排序逻辑
+function handleSortChange(column: any) {
+  let temp: { sortName: string; sortType: string }[] = [];
+  // console.log("排序事件", column);
+  // 处理排序逻辑
+  if (column.column.sortable === "custom") {
+    // 自定义排序逻辑
+    // 这里可以根据 column.prop 来判断是哪个列在排序
+    // 并根据 column.order 来判断排序方向（ascending 或 descending）
+    // 最后更新表格数据即可
+    if (!column.order) {
+      temp = [];
+    }
+    if (column.order === "descending") {
+      temp = [
+        {
+          sortName: column.prop,
+          sortType: "desc"
+        }
+      ];
+    }
+    if (column.order === "ascending") {
+      temp = [
+        {
+          sortName: column.prop,
+          sortType: "asc"
+        }
+      ];
+    }
+
+    props.setSortStr(temp);
+  }
+}
+//#endregion
 </script>
 
 <template>
@@ -210,6 +273,7 @@ const getSupplierInfo = (row: any) => {
         :style="{ height: 'calc(100vh - 330px)', minHeight: '500px' }"
         v-loading="props.loading"
         element-loading-text="加载中..."
+        @sort-change="handleSortChange"
       >
         <el-table-column prop="supplierName" label="供应商" min-width="150px">
           <template #header>
@@ -257,7 +321,7 @@ const getSupplierInfo = (row: any) => {
         <el-table-column prop="productName" label="品名" min-width="200px" />
         <el-table-column prop="specification" label="规格" min-width="150px" />
         <el-table-column prop="unit" label="单位" />
-        <el-table-column prop="referenceCost" label="价格" />
+        <el-table-column prop="referenceCost" label="价格" sortable="custom" />
 
         <el-table-column prop="" label="协议价状态">
           <template #header>
@@ -295,6 +359,15 @@ const getSupplierInfo = (row: any) => {
                 @click="handleDeleteClick(scope.row)"
                 :icon="Delete"
               />
+
+              <el-tooltip
+                effect="dark"
+                content="同步u9数据"
+                placement="top"
+                :show-after="150"
+              >
+                <el-button link type="primary" @click="" :icon="RefreshRight" />
+              </el-tooltip>
             </el-space>
           </template>
         </el-table-column>

@@ -43,14 +43,14 @@ const formData = reactive({
   priceChangeReason: "" // 价格变动原因
 });
 const rules = {
-  materialCode: [{ required: true, message: "输选择料号", trigger: "change" }]
+  barcode: [{ required: true, message: "请选择条码", trigger: "change" }]
 };
 
-const handleMaterialCodeChange = (val: string) => {
-  const selectedItem = props.specGoodsList.find(item => item.u9No === val);
+const handleBarcodeChange = (val: string) => {
+  const selectedItem = props.specGoodsList.find(item => item.barcode === val);
   if (selectedItem) {
+    formData.materialCode = selectedItem.u9No;
     formData.productName = selectedItem.specName;
-    formData.barcode = selectedItem.barcode;
   }
 };
 
@@ -144,21 +144,31 @@ const handleAddSupplier = () => {
           </el-space>
         </el-form-item>
 
-        <!-- 料号 -->
-        <el-form-item label="料号" prop="materialCode">
+        <!-- 供应商编码 -->
+        <el-form-item label="供应商编码" prop="">
+          <el-input v-model="formData.supplierId" disabled />
+        </el-form-item>
+
+        <!-- 条码 -->
+        <el-form-item label="条码" prop="barcode">
           <el-select
-            v-model="formData.materialCode"
-            placeholder="请选择料号（自动匹配品名和条码）"
+            v-model="formData.barcode"
+            placeholder="请选择条码（自动匹配料号和品名）"
             filterable
-            @change="handleMaterialCodeChange"
+            @change="handleBarcodeChange"
           >
             <el-option
               v-for="item in props.specGoodsList"
-              :key="item.u9No"
-              :label="item.u9No"
-              :value="item.u9No"
+              :key="item.barcode"
+              :label="item.barcode"
+              :value="item.barcode"
             />
           </el-select>
+        </el-form-item>
+
+        <!-- 料号 -->
+        <el-form-item label="料号" prop="materialCode">
+          <el-input v-model="formData.materialCode" disabled />
         </el-form-item>
 
         <!-- 品名 -->
@@ -169,11 +179,6 @@ const handleAddSupplier = () => {
         <!-- 规格 -->
         <el-form-item label="规格" prop="specification">
           <el-input v-model="formData.specification" />
-        </el-form-item>
-
-        <!-- 条码 -->
-        <el-form-item label="条码" prop="barcode">
-          <el-input v-model="formData.barcode" disabled />
         </el-form-item>
 
         <!-- 单位 -->
