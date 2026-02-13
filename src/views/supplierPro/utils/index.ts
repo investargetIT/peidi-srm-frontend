@@ -6,6 +6,8 @@ import dayjs from "dayjs";
  * @param row 供应商数据行
  * @returns 服务状态对象
  */
+// 注意：逻辑有调整，以@/views/supplierPro/components/tipDialogs/index.vue 说明为准
+// 注意：判断逻辑已经放到了服务端 此函数理论上不再使用
 export const formatSupplierStatus = (row: any) => {
   // 格式化返回的服务状态
   function formatSupplierStatus(
@@ -67,6 +69,46 @@ export const formatSupplierStatus = (row: any) => {
   }
 };
 
+// 新的服务状态计算 逻辑放到了服务端 这里只负责展示
+export const formatSupplierStatusClient = (row: any) => {
+  function formatSupplierStatus(
+    text: string,
+    type: "primary" | "success" | "info" | "warning" | "danger"
+  ) {
+    return {
+      text,
+      type,
+      color: STATUS_COLOR_CONFIG[type]
+    };
+  }
+
+  /**
+   * serviceStatus 字段表示
+   * 灰色 -未签年框：3
+   * 绿色 -有效期内：2
+   * 黄色 -临近到期：1
+   * 红色 -已过期：4
+   */
+
+  const serviceStatus = row?.serviceStatus;
+  if (!serviceStatus) {
+    return formatSupplierStatus("信息未知", "danger");
+  }
+  if (serviceStatus === 1) {
+    return formatSupplierStatus("临期", "warning");
+  }
+  if (serviceStatus === 2) {
+    return formatSupplierStatus("有效", "success");
+  }
+  if (serviceStatus === 3) {
+    return formatSupplierStatus("未签年框", "info");
+  }
+  if (serviceStatus === 4) {
+    return formatSupplierStatus("过期", "danger");
+  }
+  return formatSupplierStatus("信息未知", "danger");
+};
+
 export const getPdSvg = (name: string) => {
   const loading = `
         <path class="path" d="
@@ -83,3 +125,8 @@ export const getPdSvg = (name: string) => {
   }
   return "";
 };
+
+// 判断是否是开发环境 返回true代表是开发环境
+export function isDevEnv() {
+  return process.env.NODE_ENV === "development";
+}

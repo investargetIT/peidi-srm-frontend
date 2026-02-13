@@ -65,6 +65,7 @@ const handleSubmit = () => {
 };
 
 const handleClose = () => {
+  formData.id = "";
   formRef.value?.resetFields();
   visible.value = false;
 };

@@ -19,8 +19,8 @@ import TableCard from "./components/tableCard/index.vue";
 
 const router = useRoute();
 const PARENT_CATEGORY_NAME = (router.name as string) || "";
-//@ts-ignore
-const USER_ID = storageLocal().getItem("dataSource")?.id || null;
+
+const USER_ID = (storageLocal().getItem("dataSource") as any)?.id || null;
 
 const loading = ref(true);
 const allCateData = ref([]);

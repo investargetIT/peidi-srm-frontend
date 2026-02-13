@@ -65,6 +65,7 @@ defineExpose({
             </span>
             年框已传，且 协议到期时间 < 当前时间
           </li>
+          <li>若无法获取该年框信息，显示<strong> 信息未知</strong></li>
         </ul>
         <p class="font-bold mb-[10px] mt-[10px]">
           特例：协议起始日期 > 当前时间 视为未签年框

@@ -7,12 +7,15 @@ import {
   getSpecGoodsList,
   updatePd
 } from "@/api/user";
+import { storageLocal } from "@pureadmin/utils";
 import { ElMessage } from "element-plus";
 import { onMounted, ref } from "vue";
 import DetailDialog from "./components/detailDialog/index.vue";
 import RulesCard from "./components/priceRulesCard/index.vue";
 import SearchCard from "./components/searchCard/index.vue";
 import TableCard from "./components/tableCard/index.vue";
+
+const USER_ID = (storageLocal().getItem("dataSource") as any)?.id || null;
 
 const loading = ref(true);
 const supplierList = ref([]);
@@ -46,19 +49,28 @@ const getSearchStr = () => {
 
   return JSON.stringify(searchStr);
 };
+
+const handleSearchBarcode = (barcode: string) => {
+  searchCardRef.value?.handleSearchBarcode(barcode);
+};
 //#endregion
 
 //#region 排序相关
-const sortStr = ref<{ sortName: string; sortType: string }[]>([
+const SORT_DEFAULT = [
+  { sortName: "serviceStatus", sortType: "asc" },
   { sortName: "id", sortType: "desc" }
+];
+const sortStr = ref<{ sortName: string; sortType: string }[]>([
+  ...SORT_DEFAULT
 ]);
 // 赋值排序参数
 const setSortStr = (sort: { sortName: string; sortType: string }[]) => {
   // console.log("触发排序:", sort);
   if (!sort || sort.length === 0) {
-    return;
+    sortStr.value = [...SORT_DEFAULT];
+  } else {
+    sortStr.value = [...sort, ...SORT_DEFAULT];
   }
-  sortStr.value = [...sortStr.value, ...sort];
   fetchProductPage();
 };
 //#endregion
@@ -145,7 +157,8 @@ const fetchAdd = (data: any, callback?: () => void) => {
   // return;
   addPd({
     ...data,
-    type: "pdzc"
+    type: "pdzc",
+    userId: USER_ID
   })
     .then((res: any) => {
       if (res?.code == 200) {
@@ -165,7 +178,8 @@ const fetchUpdate = (data: any, callback?: () => void) => {
   // console.log("更新数据:", data);
   // return;
   updatePd({
-    ...data
+    ...data,
+    userId: USER_ID
   })
     .then((res: any) => {
       if (res?.code == 200) {
@@ -235,6 +249,7 @@ onMounted(async () => {
         :fetchProductPage="fetchProductPage"
         :loading="loading"
         :setSortStr="setSortStr"
+        :handleSearchBarcode="handleSearchBarcode"
       />
     </div>
 

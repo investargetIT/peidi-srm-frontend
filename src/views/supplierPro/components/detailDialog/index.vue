@@ -125,6 +125,7 @@ const handleSubmit = () => {
 };
 
 const handleClose = () => {
+  formData.id = "";
   formRef.value?.resetFields();
   if (productTreeLoadingMessage.value) {
     productTreeLoadingMessage.value?.close();

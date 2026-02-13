@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import TipDialog from "@/views/supplierPro/components/tipDialogs/index.vue";
-import { formatSupplierStatus } from "@/views/supplierPro/utils/index";
+import {
+  formatSupplierStatusClient,
+  isDevEnv
+} from "@/views/supplierPro/utils/index";
 import { Delete, Edit, Plus, Upload } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { ref, watch } from "vue";
@@ -160,11 +163,11 @@ const handleExportClick = async () => {
 
           <template #default="scope">
             <el-tag
-              :type="formatSupplierStatus(scope.row).type"
+              :type="formatSupplierStatusClient(scope.row).type"
               effect="light"
               size="small"
             >
-              {{ formatSupplierStatus(scope.row).text }}
+              {{ formatSupplierStatusClient(scope.row).text }}
             </el-tag>
           </template>
         </el-table-column>
@@ -203,7 +206,7 @@ const handleExportClick = async () => {
               link
               type="danger"
               @click="handleDeleteClick(scope.row)"
-              v-if="false"
+              v-if="isDevEnv()"
               :icon="Delete"
             />
           </template>

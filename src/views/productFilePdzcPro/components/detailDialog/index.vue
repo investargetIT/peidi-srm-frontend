@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import PdUpload from "@/components/PdUpload/index.vue";
 import { ElMessageBox } from "element-plus";
-import { nextTick, reactive, ref } from "vue";
+import { computed, nextTick, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import RulesCard from "../../components/priceRulesCard/index.vue";
 
@@ -39,11 +39,14 @@ const formData = reactive({
   barcode: "", // 条码
   unit: "", // 单位
   referenceCost: "", // 价格
+  deliveryCycle: "", // 交货周期
+  minimumOrderQuantity: 0, // 最小起订量
   supplementaryAgreement: [], // 补充协议（如有涨价）
   priceChangeReason: "" // 价格变动原因
 });
 const rules = {
-  barcode: [{ required: true, message: "请选择条码", trigger: "change" }]
+  barcode: [{ required: true, message: "请选择条码", trigger: "change" }],
+  productName: [{ required: true, message: "请输入品名", trigger: "change" }]
 };
 
 const handleBarcodeChange = (val: string) => {
@@ -51,7 +54,10 @@ const handleBarcodeChange = (val: string) => {
   if (selectedItem) {
     formData.materialCode = selectedItem.u9No;
     formData.productName = selectedItem.specName;
+    return;
   }
+  formData.materialCode = "";
+  formData.productName = "";
 };
 
 const handleSubmit = () => {
@@ -73,6 +79,7 @@ const handleSubmit = () => {
 };
 
 const handleClose = () => {
+  formData.id = "";
   formRef.value?.resetFields();
 };
 
@@ -102,6 +109,16 @@ const handleAddSupplier = () => {
     })
     .catch(() => {});
 };
+
+// 计算属性 - 去重后的条码选项
+const uniqueBarcodeOptions = computed(() => {
+  return Array.from(new Set(props.specGoodsList.map(item => item.barcode))).map(
+    barcode => ({
+      label: barcode,
+      value: barcode
+    })
+  );
+});
 </script>
 
 <template>
@@ -151,19 +168,14 @@ const handleAddSupplier = () => {
 
         <!-- 条码 -->
         <el-form-item label="条码" prop="barcode">
-          <el-select
+          <el-select-v2
             v-model="formData.barcode"
+            :options="uniqueBarcodeOptions"
             placeholder="请选择条码（自动匹配料号和品名）"
             filterable
+            allow-create
             @change="handleBarcodeChange"
-          >
-            <el-option
-              v-for="item in props.specGoodsList"
-              :key="item.barcode"
-              :label="item.barcode"
-              :value="item.barcode"
-            />
-          </el-select>
+          />
         </el-form-item>
 
         <!-- 料号 -->
@@ -173,7 +185,7 @@ const handleAddSupplier = () => {
 
         <!-- 品名 -->
         <el-form-item label="品名" prop="productName">
-          <el-input v-model="formData.productName" disabled />
+          <el-input v-model="formData.productName" />
         </el-form-item>
 
         <!-- 规格 -->
@@ -189,6 +201,16 @@ const handleAddSupplier = () => {
         <!-- 价格 -->
         <el-form-item label="价格" prop="referenceCost">
           <el-input v-model="formData.referenceCost" />
+        </el-form-item>
+
+        <!-- 交货周期 -->
+        <el-form-item label="交货周期" prop="deliveryCycle">
+          <el-input v-model="formData.deliveryCycle" />
+        </el-form-item>
+
+        <!-- 最小起订量 -->
+        <el-form-item label="最小起订量" prop="minimumOrderQuantity">
+          <el-input-number v-model="formData.minimumOrderQuantity" :min="0" />
         </el-form-item>
 
         <div class="mb-[20px]">

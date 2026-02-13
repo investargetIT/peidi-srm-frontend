@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import TipDialog from "@/views/supplierPro/components/tipDialogs/index.vue";
-import { formatSupplierStatus } from "@/views/supplierPro/utils/index";
-import { Delete, Edit, Plus, RefreshRight } from "@element-plus/icons-vue";
+import { formatSupplierStatusClient } from "@/views/supplierPro/utils/index";
+import {
+  Delete,
+  Edit,
+  Plus,
+  RefreshRight,
+  Search
+} from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { ref, watch } from "vue";
 import StatusCircle from "./statusCircle.vue";
-import dayjs from "dayjs";
+import RiPulseLine from "@iconify-icons/ri/pulse-line";
+import PriceChart from "../priceChart/index.vue";
 
 export type TagType = "success" | "warning" | "info" | "primary" | "danger";
 
@@ -37,6 +44,10 @@ const props = defineProps({
     default: false
   },
   setSortStr: {
+    type: Function,
+    required: true
+  },
+  handleSearchBarcode: {
     type: Function,
     required: true
   }
@@ -152,8 +163,10 @@ const getHasSignAgreementStatus = (row: any) => {
 const getIsContractPriceStatus = (row: any) => {
   // 补充协议
   const supplementaryAgreement = row?.supplementaryAgreement || [];
-  // // 价格变动原因
+  // 价格变动原因
   // const priceChangeReason = row?.priceChangeReason || "";
+  // 服务状态
+  const serviceStatus = row?.serviceStatus || null;
 
   if (supplementaryAgreement.length === 0) {
     return {
@@ -162,46 +175,27 @@ const getIsContractPriceStatus = (row: any) => {
     };
   }
 
-  const supplierInfo = getSupplierInfo(row);
-  if (supplierInfo) {
-    const hasSignAgreement = supplierInfo?.hasSignAgreement;
-    const signAgreement = supplierInfo?.signAgreement || [];
-    const agreementExpiryStart = supplierInfo?.agreementExpiryStart
-      ? dayjs(supplierInfo?.agreementExpiryStart)
-      : null;
-    const agreementExpiryEnd = supplierInfo?.agreementExpiryEnd
-      ? dayjs(supplierInfo?.agreementExpiryEnd)
-      : null;
-    const currentTime = dayjs();
-
-    if (agreementExpiryStart && agreementExpiryEnd) {
-      // 年框过期
-      if (currentTime.isAfter(agreementExpiryEnd)) {
-        return {
-          text: "报价",
-          type: "info" as TagType
-        };
-      }
-      // 未签年框
-      if (!hasSignAgreement || signAgreement.length === 0) {
-        return {
-          text: "报价",
-          type: "info" as TagType
-        };
-      }
-      if (agreementExpiryStart.isAfter(currentTime)) {
-        return {
-          text: "报价",
-          type: "info" as TagType
-        };
-      }
-
-      return {
-        text: "协议价",
-        type: "success" as TagType
-      };
-    }
+  if (!serviceStatus) {
+    return {
+      text: "协议价信息错误",
+      type: "danger" as TagType
+    };
   }
+
+  if (serviceStatus === 4 || serviceStatus === 3) {
+    return {
+      text: "报价",
+      type: "info" as TagType
+    };
+  }
+
+  if (serviceStatus === 2 || serviceStatus === 1) {
+    return {
+      text: "协议价",
+      type: "success" as TagType
+    };
+  }
+
   return {
     text: "协议价信息错误",
     type: "danger" as TagType
@@ -254,6 +248,13 @@ function handleSortChange(column: any) {
   }
 }
 //#endregion
+
+// 点击查询条码
+const handleSearchBarcode = (row: any) => {
+  if (row.barcode) {
+    props.handleSearchBarcode(row.barcode);
+  }
+};
 </script>
 
 <template>
@@ -294,9 +295,7 @@ function handleSortChange(column: any) {
               <div class="flex items-center mb-[5px]">
                 <StatusCircle
                   :size="12"
-                  :color="
-                    formatSupplierStatus(getSupplierInfo(scope.row)).color
-                  "
+                  :color="formatSupplierStatusClient(scope.row).color"
                 />
                 <div class="ml-[5px]">
                   <span>{{ scope.row.supplierName }}</span>
@@ -317,11 +316,59 @@ function handleSortChange(column: any) {
           </template>
         </el-table-column>
 
-        <el-table-column prop="barcode" label="条码" min-width="130px" />
+        <el-table-column prop="barcode" label="条码" min-width="130px">
+          <template #default="scope">
+            <div class="flex items-center">
+              {{ scope.row.barcode }}
+              <div v-if="scope.row.barcode" class="ml-[1px]">
+                <el-tooltip
+                  effect="dark"
+                  content="点击快捷查询条码"
+                  placement="top"
+                  :show-after="150"
+                >
+                  <el-button
+                    link
+                    size="small"
+                    type="primary"
+                    :icon="Search"
+                    @click="handleSearchBarcode(scope.row)"
+                  />
+                </el-tooltip>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="productName" label="品名" min-width="200px" />
         <el-table-column prop="specification" label="规格" min-width="150px" />
         <el-table-column prop="unit" label="单位" />
-        <el-table-column prop="referenceCost" label="价格" sortable="custom" />
+        <el-table-column prop="referenceCost" label="价格" sortable="custom">
+          <template #default="scope">
+            <div class="flex items-center">
+              {{ scope.row.referenceCost }}
+              <div class="ml-[5px]">
+                <el-popover
+                  title=""
+                  content=""
+                  placement="top-start"
+                  :width="500"
+                  :show-after="150"
+                  trigger="hover"
+                >
+                  <template #reference>
+                    <el-button link size="small" type="primary" @click="">
+                      <IconifyIconOffline :icon="RiPulseLine" />
+                    </el-button>
+                  </template>
+
+                  <div>
+                    <PriceChart :source="scope.row" />
+                  </div>
+                </el-popover>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
 
         <el-table-column prop="" label="协议价状态">
           <template #header>

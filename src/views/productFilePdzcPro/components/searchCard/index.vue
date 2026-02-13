@@ -32,8 +32,16 @@ const getSearchInfo = () => {
   return searchInfo;
 };
 
+const handleSearchBarcode = (barcode: string) => {
+  if (barcode) {
+    searchInfo.barcode = barcode;
+    handleSearchClick();
+  }
+};
+
 defineExpose({
-  getSearchInfo
+  getSearchInfo,
+  handleSearchBarcode
 });
 </script>
 

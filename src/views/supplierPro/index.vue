@@ -36,6 +36,14 @@ const getSearchStr = () => {
     });
   }
 
+  if (searchInfo?.serviceStatus) {
+    searchStr.push({
+      searchName: "serviceStatus",
+      searchType: "equals",
+      searchValue: `\"${searchInfo.serviceStatus}\"`
+    });
+  }
+
   if (searchInfo?.supplierGradeId) {
     searchStr.push({
       searchName: "supplierGradeId",
@@ -80,7 +88,10 @@ const fetchSupplierList = () => {
     pageNo: tableCardRef.value?.getPaginationInfo()?.currentPage || 1,
     pageSize: tableCardRef.value?.getPaginationInfo()?.pageSize || 10,
     searchStr: getSearchStr(),
-    sortStr: JSON.stringify([{ sortName: "id", sortType: "desc" }])
+    sortStr: JSON.stringify([
+      { sortName: "serviceStatus", sortType: "asc" },
+      { sortName: "id", sortType: "desc" }
+    ])
   })
     .then((res: any) => {
       if (res?.code === 200) {
@@ -167,15 +178,24 @@ const fetchMergeTreeData = async () => {
     const [catRes, productRes]: any = await Promise.all([
       getAllCate({}),
       fetchProductList({
-        searchStr: JSON.stringify([
-          { searchName: "enable", searchType: "equals", searchValue: "true" }
-        ])
+        // searchStr: JSON.stringify([
+        //   { searchName: "enable", searchType: "equals", searchValue: "true" }
+        // ])
       })
     ]);
 
     // 处理原始数据
     const categoryTree = catRes?.code ? buildTree(catRes.data || []) : [];
-    const productTreeData = productRes?.code ? productRes.data || [] : [];
+    let productTreeData = productRes?.code ? productRes.data || [] : [];
+    // console.log("获取产品信息树:", categoryTree, productTreeData);
+
+    // productTreeData需要根据materialCode去重一次
+    productTreeData = productTreeData.reduce((acc: any, cur: any) => {
+      if (!acc.find((item2: any) => item2.materialCode == cur.materialCode)) {
+        acc.push(cur);
+      }
+      return acc;
+    }, []);
 
     // 构建基础树结构（三级：父分类->子分类->产品）
     const level1Map = {};

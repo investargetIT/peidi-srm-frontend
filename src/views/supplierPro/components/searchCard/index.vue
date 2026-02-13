@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { SERVICE_STATUS_ENUM } from "@/views/supplierPro/constants/index";
 import { Refresh, Search } from "@element-plus/icons-vue";
 import { reactive, ref } from "vue";
 
@@ -16,6 +17,7 @@ const props = defineProps({
 const searchInfoRef = ref();
 const searchInfo = reactive({
   companyName: "",
+  serviceStatus: null,
   supplierGradeId: "",
   rating: ""
 });
@@ -48,6 +50,19 @@ defineExpose({
             placeholder="请输入公司名称"
             clearable
           />
+        </el-form-item>
+        <el-form-item label="服务状态" prop="serviceStatus">
+          <el-select
+            v-model="searchInfo.serviceStatus"
+            placeholder="请选择服务状态"
+            clearable
+          >
+            <el-option
+              v-for="item in SERVICE_STATUS_ENUM"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="供应商类型" prop="supplierGradeId">
           <el-select
