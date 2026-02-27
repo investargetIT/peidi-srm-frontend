@@ -8,7 +8,7 @@ import {
   RefreshRight,
   Search
 } from "@element-plus/icons-vue";
-import { ElMessageBox } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { ref, watch } from "vue";
 import StatusCircle from "./statusCircle.vue";
 import RiPulseLine from "@iconify-icons/ri/pulse-line";
@@ -27,7 +27,15 @@ const props = defineProps({
     type: Array<any>,
     required: true
   },
+  specGoodsList: {
+    type: Array<any>,
+    required: true
+  },
   openDetailDialog: {
+    type: Function,
+    required: true
+  },
+  updateFn: {
     type: Function,
     required: true
   },
@@ -93,6 +101,31 @@ const handleDeleteClick = (row: any) => {
       props.deleteFn(row.id);
     })
     .catch(() => {});
+};
+
+const handleUpdateU9 = (row: any) => {
+  const supplierInfo = props.specGoodsList.find(
+    item => item.barcode === row.barcode
+  );
+  if (supplierInfo) {
+    const message = ElMessage({
+      showClose: true,
+      message: `正在更新条码${row.barcode}的料号和品名...`,
+      duration: 0
+    });
+    props.updateFn(
+      {
+        ...row,
+        materialCode: supplierInfo?.u9No || "",
+        productName: supplierInfo?.specName || ""
+      },
+      () => {
+        message.close();
+      }
+    );
+  } else {
+    ElMessage.error(`条码${row.barcode}不存在对应的供应商信息`);
+  }
 };
 
 watch(
@@ -413,7 +446,12 @@ const handleSearchBarcode = (row: any) => {
                 placement="top"
                 :show-after="150"
               >
-                <el-button link type="primary" @click="" :icon="RefreshRight" />
+                <el-button
+                  link
+                  type="primary"
+                  @click="handleUpdateU9(scope.row)"
+                  :icon="RefreshRight"
+                />
               </el-tooltip>
             </el-space>
           </template>

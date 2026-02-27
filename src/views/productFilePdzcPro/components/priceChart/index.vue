@@ -28,11 +28,21 @@ const priceChartCards = ref({
     xAxis: {
       type: "category",
       data: [],
-      show: false
+      axisLine: {
+        show: true // 隐藏 X 轴坐标轴
+      },
+      axisLabel: {
+        show: false // 隐藏 X 轴的数值
+      },
+      axisTick: {
+        show: true // 隐藏 X 轴刻度线
+      }
     },
     yAxis: {
       type: "value",
-      show: false
+      axisLabel: {
+        show: false
+      }
     },
     series: [
       {

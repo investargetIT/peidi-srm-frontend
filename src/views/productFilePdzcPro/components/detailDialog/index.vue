@@ -33,6 +33,7 @@ const formRef = ref();
 const formData = reactive({
   id: "",
   supplierId: "", // 供应商ID
+  supplierCode: "", // 供应商编码
   materialCode: "", // 料号
   productName: "", // 品名
   specification: "", // 规格
@@ -47,6 +48,15 @@ const formData = reactive({
 const rules = {
   barcode: [{ required: true, message: "请选择条码", trigger: "change" }],
   productName: [{ required: true, message: "请输入品名", trigger: "change" }]
+};
+
+const handleSupplierChange = (val: string) => {
+  const selectedItem = props.supplierList.find(
+    item => item.id.toString() === val
+  );
+  if (selectedItem) {
+    formData.supplierCode = selectedItem.supplierCode;
+  }
 };
 
 const handleBarcodeChange = (val: string) => {
@@ -147,6 +157,7 @@ const uniqueBarcodeOptions = computed(() => {
               clearable
               filterable
               style="width: 345px"
+              @change="handleSupplierChange"
             >
               <el-option
                 v-for="item in props.supplierList"
@@ -162,8 +173,8 @@ const uniqueBarcodeOptions = computed(() => {
         </el-form-item>
 
         <!-- 供应商编码 -->
-        <el-form-item label="供应商编码" prop="">
-          <el-input v-model="formData.supplierId" disabled />
+        <el-form-item label="供应商编码" prop="supplierCode">
+          <el-input v-model="formData.supplierCode" disabled />
         </el-form-item>
 
         <!-- 条码 -->
