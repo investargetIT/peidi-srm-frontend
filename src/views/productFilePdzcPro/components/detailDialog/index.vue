@@ -41,7 +41,7 @@ const formData = reactive({
   unit: "", // 单位
   referenceCost: "", // 价格
   deliveryCycle: "", // 交货周期
-  minimumOrderQuantity: 0, // 最小起订量
+  minimumOrderQuantity: "", // 最小起订量
   supplementaryAgreement: [], // 补充协议（如有涨价）
   priceChangeReason: "" // 价格变动原因
 });
@@ -221,7 +221,7 @@ const uniqueBarcodeOptions = computed(() => {
 
         <!-- 最小起订量 -->
         <el-form-item label="最小起订量" prop="minimumOrderQuantity">
-          <el-input-number v-model="formData.minimumOrderQuantity" :min="0" />
+          <el-input v-model="formData.minimumOrderQuantity" />
         </el-form-item>
 
         <div class="mb-[20px]">
