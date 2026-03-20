@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getFileDownLoadPath } from "@/api/user";
 import { formatToken, getToken } from "@/utils/auth";
+import { Document, Folder, Picture, Plus } from "@element-plus/icons-vue";
 import type { UploadInstance, UploadProps } from "element-plus";
 import { ElImage, ElMessage, UploadFile, UploadUserFile } from "element-plus";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -63,6 +64,7 @@ const fileList = ref<CustomUploadFile[]>([]);
 const uploadRef = ref<UploadInstance>();
 const imagePreviewVisible = ref(false);
 const imagePreviewUrl = ref("");
+const uploadingCount = ref(0); // 正在上传的文件数量
 
 // ==================== 工具方法 ====================
 // 获取文件完整URL
@@ -99,31 +101,31 @@ const getFileType = (fileName: string): "image" | "file" => {
 // 获取文件图标
 const getFileIcon = (fileName: string) => {
   const extension = fileName.split(".").pop()?.toLowerCase() || "";
-  const iconMap: Record<string, string> = {
+  const iconMap: Record<string, any> = {
     // 图片
-    jpg: "Picture",
-    jpeg: "Picture",
-    png: "Picture",
-    gif: "Picture",
-    bmp: "Picture",
-    webp: "Picture",
-    svg: "Picture",
+    jpg: Picture,
+    jpeg: Picture,
+    png: Picture,
+    gif: Picture,
+    bmp: Picture,
+    webp: Picture,
+    svg: Picture,
     // 文档
-    pdf: "Document",
-    doc: "Document",
-    docx: "Document",
-    txt: "Document",
-    md: "Document",
+    pdf: Document,
+    doc: Document,
+    docx: Document,
+    txt: Document,
+    md: Document,
     // 表格
-    xls: "Document",
-    xlsx: "Document",
-    csv: "Document",
+    xls: Document,
+    xlsx: Document,
+    csv: Document,
     // 其他
-    zip: "Folder",
-    rar: "Folder",
-    "7z": "Folder"
+    zip: Folder,
+    rar: Folder,
+    "7z": Folder
   };
-  return iconMap[extension] || "Document";
+  return iconMap[extension] || Document;
 };
 
 // ==================== 文件操作方法 ====================
@@ -181,36 +183,50 @@ const updateFileStatus = (
 // ==================== 上传处理方法 ====================
 // 上传前验证与重命名
 const beforeUpload: UploadProps["beforeUpload"] = rawFile => {
+  // 1. 先检查文件总数限制（包括已上传的和正在上传的）
+  const currentTotalCount = props.modelValue.length + uploadingCount.value;
+
+  if (props.limit !== null && props.limit !== undefined) {
+    if (currentTotalCount >= props.limit) {
+      ElMessage.error(`最多只能上传 ${props.limit} 个文件`);
+      return Promise.reject(new Error("File limit exceeded"));
+    }
+  }
+
+  // 2. 文件大小验证
   const isLtSize = rawFile.size / 1024 / 1024 < props.fileSize;
   if (!isLtSize) {
     ElMessage.error(`文件大小不能超过 ${props.fileSize}MB!`);
     return Promise.reject(new Error("Size limit exceeded"));
   }
 
+  // 3. 文件名长度验证
   const isLtNameLength = rawFile.name.length <= props.fileNameLength;
   if (!isLtNameLength) {
     ElMessage.error(`文件名长度不能超过 ${props.fileNameLength} 个字符!`);
-    return Promise.reject(new Error("Name length limit exceeded"));
+    return Promise.reject(new Error("Name length exceeded"));
   }
 
-  // 1. 从 rawFile 上取出我们在 onChange 里挂载的新名字
-  const newName = (rawFile as any).customNewName;
+  // 4. beforeUpload 似乎在 onChange 之前调用，所以这里可以直接生成新文件名
+  const newName = getNewFileName(rawFile.name);
+  (rawFile as any).customNewName = newName;
 
-  // 如果还没算好名字（极少见情况）， fallback 一下
-  const finalName = newName || getNewFileName(rawFile.name);
+  // 5. 增加上传计数
+  uploadingCount.value++;
 
-  // 2. 创建新文件对象用于上传
-  const newFile = new File([rawFile], finalName, {
+  // 6. 创建新文件对象用于上传
+  const newFile = new File([rawFile], newName, {
     type: rawFile.type,
     lastModified: rawFile.lastModified
   });
 
-  // 3. 【关键】返回 Promise<File>，el-upload 会用它上传（服务器收到新名字）
+  // 【关键】返回 Promise<File>，el-upload 会用它上传（服务器收到新名字）
   return Promise.resolve(newFile);
 };
 
 // 文件状态改变
 const handleChange: UploadProps["onChange"] = (uploadFile, uploadFiles) => {
+  // console.log("文件状态改变:", uploadFile, uploadFiles);
   const index = findFileIndex(uploadFile);
 
   if (index === -1 && uploadFile.status === "ready") {
@@ -218,12 +234,9 @@ const handleChange: UploadProps["onChange"] = (uploadFile, uploadFiles) => {
     if (!rawFile) return;
 
     // 1. 生成新文件名
-    const newName = getNewFileName(rawFile.name);
+    const newName = (rawFile as any).customNewName;
 
-    // 2. 【关键】将新名字挂载到 rawFile 对象上，以便 beforeUpload 能获取到
-    // (beforeUpload 只能拿到 rawFile，拿不到 uploadFile 对象本身，只能这样传值)
-    (rawFile as any).customNewName = newName;
-    // 同时把 uid 也挂载上去，方便追踪
+    // 2. 把 uid 挂载上去，方便追踪
     (rawFile as any).uid = uploadFile.uid;
 
     // 3. 【关键】更新 UI 列表显示新名字
@@ -243,7 +256,6 @@ const handleProgress: UploadProps["onProgress"] = (event, uploadFile) => {
   const index = findFileIndex(uploadFile);
 
   if (index !== -1) {
-    // 不需要再改 name，handleChange 已经改过
     updateFileStatus(index, { percentage: event.percent, status: "uploading" });
   }
 };
@@ -254,12 +266,14 @@ const handleSuccess: UploadProps["onSuccess"] = (
   uploadFile,
   uploadFiles
 ) => {
+  // 减少上传计数
+  uploadingCount.value--;
+
   if (response.code === 200) {
     const relativeUrl = response.data;
     const index = findFileIndex(uploadFile);
 
     updateFileStatus(index, {
-      // name 不需要再改了，handleChange 里已经是新的了
       url: URL.createObjectURL(uploadFile.raw!),
       relativeUrl,
       status: "success",
@@ -271,6 +285,9 @@ const handleSuccess: UploadProps["onSuccess"] = (
     emit("update:modelValue", newFileUrls);
     emit("upload-success", uploadFile, uploadFiles);
     ElMessage.success("上传成功");
+  } else {
+    // 上传失败也要减少计数
+    uploadingCount.value--;
   }
 };
 
@@ -280,6 +297,9 @@ const handleError: UploadProps["onError"] = (
   uploadFile,
   uploadFiles
 ) => {
+  // 减少上传计数
+  uploadingCount.value--;
+
   const index = findFileIndex(uploadFile);
   updateFileStatus(index, { status: "fail" });
 
@@ -304,12 +324,14 @@ const handleRemove = (file: CustomUploadFile) => {
   }
 
   fileList.value = fileList.value.filter(item => item.uid !== file.uid);
+
   emit("remove", file as UploadFile, fileList.value as UploadFile[]);
   ElMessage.success("删除成功");
 };
 
 // 预览图片
 const handlePreview = (file: CustomUploadFile) => {
+  // console.log("预览", file);
   if (file.url) {
     imagePreviewUrl.value = file.url;
     imagePreviewVisible.value = true;
@@ -385,7 +407,6 @@ defineExpose({
       ref="uploadRef"
       :action="action"
       :headers="computedHeaders"
-      :limit="limit"
       :accept="accept"
       :auto-upload="autoUpload"
       :show-file-list="false"
