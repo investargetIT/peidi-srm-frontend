@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { Upload } from "@element-plus/icons-vue";
+import TipDialog from "@/views/supplierPro/components/tipDialogs/index.vue";
+import {
+  formatSupplierStatusClient,
+  isDevEnv
+} from "@/views/supplierPro/utils/index";
+import { Delete, Edit, Plus, Upload } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { ref, watch } from "vue";
 import { exportAllSupplier } from "../../utils/exportExcel";
+
+const tipDialogRef = ref();
 
 const props = defineProps({
   tableData: {
@@ -20,6 +27,10 @@ const props = defineProps({
   fetchSupplierList: {
     type: Function,
     required: true
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -55,11 +66,14 @@ const formatContactInfo = (contactInfo: string) => {
   if (!contactInfo) {
     return [];
   }
-  const contactInfoList = JSON.parse(contactInfo).map(item => ({
-    name: item.person,
-    info: item.info
-  }));
-  return contactInfoList;
+  try {
+    return JSON.parse(contactInfo).map(item => ({
+      name: item.person,
+      info: item.info
+    }));
+  } catch {
+    return [];
+  }
 };
 
 watch(
@@ -78,7 +92,7 @@ const setPaginationInfo = ({ currentPage, total }) => {
   if (currentPage) {
     paginationInfo.value.currentPage = currentPage;
   }
-  if (total) {
+  if (total !== undefined && total !== null) {
     paginationInfo.value.total = total;
   }
 };
@@ -113,7 +127,7 @@ const handleExportClick = async () => {
           >
             导出全部供应商
           </el-button>
-          <el-button type="primary" @click="handleAddClick">
+          <el-button type="primary" @click="handleAddClick" :icon="Plus">
             添加供应商
           </el-button>
         </el-space>
@@ -122,30 +136,79 @@ const handleExportClick = async () => {
       <el-table
         :data="props.tableData"
         :header-cell-style="{ color: '#0a0a0a' }"
-        size="small"
+        size="default"
+        :style="{ height: 'calc(100vh - 330px)', minHeight: '500px' }"
+        v-loading="props.loading"
+        element-loading-text="加载中..."
       >
-        <el-table-column prop="companyName" label="公司名称" />
-        <el-table-column prop="companyAddress" label="地址" />
-        <el-table-column prop="contactInfo" label="联系信息">
+        <el-table-column
+          prop="companyName"
+          label="公司名称"
+          min-width="180px"
+        />
+
+        <el-table-column prop="" label="服务状态" min-width="100px">
+          <template #header>
+            <div class="flex items-center">
+              <span class="mr-[3px]">服务状态</span>
+              <el-icon
+                class="pb-[3px] cursor-pointer"
+                size="16"
+                @click="tipDialogRef?.show('supplier_serviceStatus')"
+              >
+                <QuestionFilled />
+              </el-icon>
+            </div>
+          </template>
+
+          <template #default="scope">
+            <el-tag
+              :type="formatSupplierStatusClient(scope.row).type"
+              effect="light"
+              size="small"
+            >
+              {{ formatSupplierStatusClient(scope.row).text }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column
+          prop="supplierGradeName"
+          label="供应商类型"
+          min-width="120px"
+        />
+
+        <el-table-column prop="rating" label="供应商评级" min-width="85px" />
+
+        <el-table-column prop="companyAddress" label="地址" min-width="150px" />
+
+        <el-table-column prop="contactInfo" label="联系信息" min-width="150px">
           <template #default="scope">
             <div
               v-for="item in formatContactInfo(scope.row.contactInfo)"
               :key="item.name"
             >
-              {{ item.name }}: {{ item.info }}
+              {{ item.name }} {{ item.info }}
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="supplierGradeName" label="供应商类型" />
 
         <el-table-column fixed="right" label="操作" width="125px">
           <template #default="scope">
-            <el-button link type="primary" @click="handleEditClick(scope.row)">
-              编辑
-            </el-button>
-            <el-button link type="danger" @click="handleDeleteClick(scope.row)">
-              删除
-            </el-button>
+            <el-button
+              link
+              type="primary"
+              @click="handleEditClick(scope.row)"
+              :icon="Edit"
+            />
+
+            <el-button
+              link
+              type="danger"
+              @click="handleDeleteClick(scope.row)"
+              v-if="isDevEnv()"
+              :icon="Delete"
+            />
           </template>
         </el-table-column>
       </el-table>
@@ -162,5 +225,7 @@ const handleExportClick = async () => {
         />
       </div>
     </el-card>
+
+    <TipDialog ref="tipDialogRef" />
   </div>
 </template>

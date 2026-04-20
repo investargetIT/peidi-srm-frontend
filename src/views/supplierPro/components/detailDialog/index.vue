@@ -3,6 +3,7 @@ import { getProductInfo } from "@/api/user";
 import PdUpload from "@/components/PdUpload/index.vue";
 import { dayjs, ElMessage } from "element-plus";
 import { nextTick, reactive, ref, watch } from "vue";
+import InfoCard from "./infoCard.vue";
 
 const props = defineProps({
   supplierGradeEnum: {
@@ -51,11 +52,42 @@ const formData = reactive({
   contactInfo_Person: "",
   contactInfo_Info: "",
   hasSignAgreement: false,
-  agreementExpiry: ""
+  agreementExpiryStart: "",
+  agreementExpiryEnd: "",
+  rating: "A",
+  ratingFile: [],
+  signAgreement: []
 });
 const rules = {
   companyName: [{ required: true, message: "输入公司名称", trigger: "blur" }],
-  companyAddress: [{ required: true, message: "输入公司地址", trigger: "blur" }]
+  agreementExpiryStart: [
+    {
+      required: true,
+      message: "请选择年框协议起始日期",
+      trigger: "change",
+      validator: (rule, value, callback) => {
+        if (formData.hasSignAgreement && !value) {
+          callback(new Error("请选择年框协议起始日期"));
+        } else {
+          callback();
+        }
+      }
+    }
+  ],
+  agreementExpiryEnd: [
+    {
+      required: true,
+      message: "请选择年框协议到期时间",
+      trigger: "change",
+      validator: (rule, value, callback) => {
+        if (formData.hasSignAgreement && !value) {
+          callback(new Error("请选择年框协议到期时间"));
+        } else {
+          callback();
+        }
+      }
+    }
+  ]
 };
 
 const handleSubmit = () => {
@@ -70,8 +102,11 @@ const handleSubmit = () => {
           }
         ]),
         supplierProduct: formatSupplierProduct(formData?.supplierProduct || []),
-        agreementExpiry: formData.agreementExpiry
-          ? dayjs(formData.agreementExpiry).format("YYYY-MM-DD")
+        agreementExpiryStart: formData.agreementExpiryStart
+          ? dayjs(formData.agreementExpiryStart).format("YYYY-MM-DD")
+          : "",
+        agreementExpiryEnd: formData.agreementExpiryEnd
+          ? dayjs(formData.agreementExpiryEnd).format("YYYY-MM-DD")
           : ""
       };
       // console.log("提交表单:", formData, formTemp);
@@ -90,7 +125,11 @@ const handleSubmit = () => {
 };
 
 const handleClose = () => {
+  formData.id = "";
   formRef.value?.resetFields();
+  if (productTreeLoadingMessage.value) {
+    productTreeLoadingMessage.value?.close();
+  }
 };
 
 //#region 产品信息相关逻辑
@@ -188,7 +227,16 @@ const initFormData = async (type: "add" | "edit", row?: any) => {
       // 处理联系人信息
       const contactInfo = row?.contactInfo;
       if (contactInfo) {
-        const temp = JSON.parse(contactInfo)?.[0] || {};
+        let temp = {
+          person: "",
+          info: ""
+        };
+        try {
+          temp = JSON.parse(contactInfo)?.[0] || {};
+        } catch (e) {
+          console.warn("解析联系人信息失败:", e);
+        }
+
         // console.log("初始化表单 contactInfo:", temp);
         formData.contactInfo_Person = temp.person || "";
         formData.contactInfo_Info = temp.info || "";
@@ -236,12 +284,12 @@ defineExpose({
       top="5vh"
       append-to-body
       @close="handleClose"
+      :close-on-click-modal="false"
     >
       <el-form
         ref="formRef"
         :model="formData"
         label-width="110px"
-        label-position="top"
         :rules="rules"
       >
         <!-- 公司名称 -->
@@ -332,33 +380,103 @@ defineExpose({
           <PdUpload v-model="formData.contractInfo" accept="" :file-size="50" />
         </el-form-item>
 
-        <!-- 供应商分级 -->
-        <el-form-item label="供应商分级" prop="supplierGradeId">
-          <el-select v-model="formData.supplierGradeId">
-            <el-option
-              v-for="item in supplierGradeEnum"
-              :label="item.value"
-              :value="item.id.toString()"
-            />
-          </el-select>
-        </el-form-item>
+        <div class="mb-[20px]">
+          <InfoCard title="供应商">
+            <!-- 供应商类型 -->
+            <el-form-item label="供应商类型" prop="supplierGradeId">
+              <el-select
+                v-model="formData.supplierGradeId"
+                placeholder="请选择供应商类型"
+                clearable
+              >
+                <el-option
+                  v-for="item in supplierGradeEnum"
+                  :label="item.value"
+                  :value="item.id.toString()"
+                />
+              </el-select>
+            </el-form-item>
 
-        <!-- 年度框架协议 -->
-        <el-form-item label="年度框架协议" prop="hasSignAgreement">
-          <el-checkbox v-model="formData.hasSignAgreement" label="已签订" />
-        </el-form-item>
+            <!-- 供应商评级 -->
+            <el-form-item label="供应商评级" prop="rating">
+              <el-select
+                v-model="formData.rating"
+                placeholder="请选择供应商评级"
+                :disabled="formData.ratingFile.length === 0"
+              >
+                <el-option
+                  v-for="item in ['A', 'B', 'C', 'D']"
+                  :label="item"
+                  :value="item"
+                />
+              </el-select>
+              <span class="text-[12px] text-[#909399]">
+                默认A级，修改评级需上传说明文件（如质量问题、交付延迟等）
+              </span>
+            </el-form-item>
 
-        <!-- 年框协议到期时间 -->
-        <el-form-item label="年框协议到期时间" prop="agreementExpiry">
-          <el-date-picker
-            v-model="formData.agreementExpiry"
-            type="date"
-            placeholder="请选择年框协议到期时间"
-          />
-        </el-form-item>
+            <!-- 评级变更说明文件 -->
+            <el-form-item label="评级变更说明" prop="ratingFile">
+              <PdUpload
+                v-model="formData.ratingFile"
+                accept=""
+                :file-size="50"
+              />
+            </el-form-item>
+          </InfoCard>
+        </div>
+
+        <div class="mb-[20px]">
+          <InfoCard title="年度框架协议">
+            <!-- 年度框架协议 -->
+            <el-form-item label="年度框架协议" prop="hasSignAgreement">
+              <div class="w-full">
+                <el-checkbox
+                  v-model="formData.hasSignAgreement"
+                  label="已签订"
+                />
+              </div>
+
+              <span class="text-[12px] text-[#909399] leading-[24px]">
+                已签约供应商产品报价原则上不变。如需涨价，需签署补充协议并上传后方可更新报价
+              </span>
+            </el-form-item>
+
+            <div v-show="formData.hasSignAgreement">
+              <el-form-item label="" prop="signAgreement">
+                <PdUpload
+                  v-model="formData.signAgreement"
+                  accept=""
+                  :file-size="50"
+                />
+              </el-form-item>
+            </div>
+
+            <div v-show="formData.hasSignAgreement">
+              <!-- 年框协议起始日期 -->
+              <el-form-item label="协议起始日期" prop="agreementExpiryStart">
+                <el-date-picker
+                  v-model="formData.agreementExpiryStart"
+                  type="date"
+                  placeholder="请选择年框协议起始日期"
+                />
+              </el-form-item>
+
+              <!-- 年框协议到期时间 -->
+              <el-form-item label="协议到期时间" prop="agreementExpiryEnd">
+                <el-date-picker
+                  v-model="formData.agreementExpiryEnd"
+                  type="date"
+                  placeholder="请选择年框协议到期时间"
+                />
+              </el-form-item>
+            </div>
+          </InfoCard>
+        </div>
 
         <el-form-item>
           <div class="w-full flex justify-end">
+            <el-button @click="visible = false"> 取消 </el-button>
             <el-button type="primary" @click="handleSubmit">
               {{ formType === "add" ? "添加" : "编辑" }}
             </el-button>

@@ -7,12 +7,17 @@ import {
   getSpecGoodsList,
   updatePd
 } from "@/api/user";
+import { storageLocal } from "@pureadmin/utils";
 import { ElMessage } from "element-plus";
 import { onMounted, ref } from "vue";
 import DetailDialog from "./components/detailDialog/index.vue";
+import RulesCard from "./components/priceRulesCard/index.vue";
 import SearchCard from "./components/searchCard/index.vue";
 import TableCard from "./components/tableCard/index.vue";
 
+const USER_ID = (storageLocal().getItem("dataSource") as any)?.id || null;
+
+const loading = ref(true);
 const supplierList = ref([]);
 const specGoodsList = ref([]);
 const productTableData = ref([]);
@@ -44,7 +49,32 @@ const getSearchStr = () => {
 
   return JSON.stringify(searchStr);
 };
+
+const handleSearchBarcode = (barcode: string) => {
+  searchCardRef.value?.handleSearchBarcode(barcode);
+};
 //#endregion
+
+//#region 排序相关
+const SORT_DEFAULT = [
+  { sortName: "serviceStatus", sortType: "asc" },
+  { sortName: "id", sortType: "desc" }
+];
+const sortStr = ref<{ sortName: string; sortType: string }[]>([
+  ...SORT_DEFAULT
+]);
+// 赋值排序参数
+const setSortStr = (sort: { sortName: string; sortType: string }[]) => {
+  // console.log("触发排序:", sort);
+  if (!sort || sort.length === 0) {
+    sortStr.value = [...SORT_DEFAULT];
+  } else {
+    sortStr.value = [...sort, ...SORT_DEFAULT];
+  }
+  fetchProductPage();
+};
+//#endregion
+
 //#region 请求相关
 const fetchSupplierList = () => {
   return getPageSupplier({
@@ -85,11 +115,12 @@ const fetchSpecGoodsList = () => {
 };
 
 const fetchProductPage = () => {
+  loading.value = true;
   return getPagePd({
     pageNo: tableCardRef.value?.getPaginationInfo()?.currentPage || 1,
     pageSize: tableCardRef.value?.getPaginationInfo()?.pageSize || 10,
     searchStr: getSearchStr(),
-    sortStr: JSON.stringify([{ sortName: "id", sortType: "desc" }])
+    sortStr: JSON.stringify(sortStr.value)
   })
     .then((res: any) => {
       // console.log("智创产品列表：", res);
@@ -115,6 +146,9 @@ const fetchProductPage = () => {
     })
     .catch(error => {
       ElMessage.error("获取智创产品列表失败:" + error.message);
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -124,7 +158,7 @@ const fetchAdd = (data: any, callback?: () => void) => {
   addPd({
     ...data,
     type: "pdzc",
-    supplierId: data.supplierProduct.join(",") // 用于筛选供应商
+    userId: USER_ID
   })
     .then((res: any) => {
       if (res?.code == 200) {
@@ -145,7 +179,7 @@ const fetchUpdate = (data: any, callback?: () => void) => {
   // return;
   updatePd({
     ...data,
-    supplierId: data.supplierProduct.join(",")
+    userId: USER_ID
   })
     .then((res: any) => {
       if (res?.code == 200) {
@@ -194,6 +228,10 @@ onMounted(async () => {
 <template>
   <div>
     <div>
+      <RulesCard type="main" />
+    </div>
+
+    <div class="mt-[20px]">
       <SearchCard
         ref="searchCardRef"
         :supplierList="supplierList"
@@ -206,9 +244,14 @@ onMounted(async () => {
         ref="tableCardRef"
         :tableData="productTableData"
         :supplierList="supplierList"
+        :specGoodsList="specGoodsList"
         :openDetailDialog="openDetailDialog"
+        :updateFn="fetchUpdate"
         :deleteFn="fetchDelete"
         :fetchProductPage="fetchProductPage"
+        :loading="loading"
+        :setSortStr="setSortStr"
+        :handleSearchBarcode="handleSearchBarcode"
       />
     </div>
 

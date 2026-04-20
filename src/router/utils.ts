@@ -195,7 +195,7 @@ async function initRouter() {
   try {
     // 1. 调用 getAllCate 接口获取一级分类数据
     const res: any = await getAllCate({});
-    if (res.success) {
+    if (res?.code === 200) {
       const level1Categories = res.data
         .filter(item => item.level === 1)
         .sort((a, b) => a.id - b.id);

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Delete, Edit, Plus } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 
 const props = defineProps({
@@ -46,9 +47,9 @@ const handleUpdateCate = (row: any) => {
     <el-card shadow="never" style="border-radius: 10px">
       <div class="flex justify-between mb-[20px]">
         <div class="text-[#0a0a0a]">工厂产品分类表</div>
-        <el-button type="primary" @click="handleAddMainCate"
-          >添加主分类</el-button
-        >
+        <el-button type="primary" @click="handleAddMainCate" :icon="Plus">
+          添加主分类
+        </el-button>
       </div>
 
       <div>
@@ -71,24 +72,35 @@ const handleUpdateCate = (row: any) => {
           />
           <el-table-column label="操作" :resizable="false">
             <template #default="scope">
-              <el-button
-                link
-                type="primary"
-                @click="handleUpdateCate(scope.row)"
-              >
-                编辑
-              </el-button>
-              <el-button link type="danger" @click="handleDelete(scope.row)">
-                删除
-              </el-button>
-              <el-button
-                link
-                type="primary"
-                v-if="scope.row.level === 1"
-                @click="handleAddChildCate(scope.row)"
-              >
-                添加子分类
-              </el-button>
+              <el-space wrap :size="16">
+                <el-button
+                  link
+                  type="primary"
+                  @click="handleUpdateCate(scope.row)"
+                  :icon="Edit"
+                />
+                <el-button
+                  link
+                  type="danger"
+                  @click="handleDelete(scope.row)"
+                  :icon="Delete"
+                />
+
+                <el-tooltip
+                  effect="dark"
+                  content="添加子分类 "
+                  placement="top"
+                  :show-after="150"
+                >
+                  <el-button
+                    link
+                    type="primary"
+                    v-if="scope.row.level === 1"
+                    @click="handleAddChildCate(scope.row)"
+                    :icon="Plus"
+                  />
+                </el-tooltip>
+              </el-space>
             </template>
           </el-table-column>
         </el-table>

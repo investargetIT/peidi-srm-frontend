@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { nextTick } from "process";
-import { computed, reactive, ref } from "vue";
+import { computed, nextTick, reactive, ref } from "vue";
 
 const props = defineProps({
   categoryList: {
@@ -66,6 +65,7 @@ const handleSubmit = () => {
 };
 
 const handleClose = () => {
+  formData.id = "";
   formRef.value?.resetFields();
   visible.value = false;
 };

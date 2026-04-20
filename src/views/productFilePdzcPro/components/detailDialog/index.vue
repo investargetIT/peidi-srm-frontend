@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import PdUpload from "@/components/PdUpload/index.vue";
 import { ElMessageBox } from "element-plus";
-import { nextTick, reactive, ref } from "vue";
+import { computed, nextTick, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import RulesCard from "../../components/priceRulesCard/index.vue";
 
 const router = useRouter();
 
@@ -31,26 +32,42 @@ const formType = ref<"add" | "edit">("add");
 const formRef = ref();
 const formData = reactive({
   id: "",
-  supplierProduct: [], // 供应商ID
+  supplierId: "", // 供应商ID
+  supplierCode: "", // 供应商编码
   materialCode: "", // 料号
   productName: "", // 品名
   specification: "", // 规格
   barcode: "", // 条码
   unit: "", // 单位
   referenceCost: "", // 价格
+  deliveryCycle: "", // 交货周期
+  minimumOrderQuantity: "", // 最小起订量
   supplementaryAgreement: [], // 补充协议（如有涨价）
   priceChangeReason: "" // 价格变动原因
 });
 const rules = {
-  materialCode: [{ required: true, message: "输选择料号", trigger: "change" }]
+  barcode: [{ required: true, message: "请选择条码", trigger: "change" }],
+  productName: [{ required: true, message: "请输入品名", trigger: "change" }]
 };
 
-const handleMaterialCodeChange = (val: string) => {
-  const selectedItem = props.specGoodsList.find(item => item.u9No === val);
+const handleSupplierChange = (val: string) => {
+  const selectedItem = props.supplierList.find(
+    item => item.id.toString() === val
+  );
   if (selectedItem) {
-    formData.productName = selectedItem.specName;
-    formData.barcode = selectedItem.barcode;
+    formData.supplierCode = selectedItem.supplierCode;
   }
+};
+
+const handleBarcodeChange = (val: string) => {
+  const selectedItem = props.specGoodsList.find(item => item.barcode === val);
+  if (selectedItem) {
+    formData.materialCode = selectedItem.u9No;
+    formData.productName = selectedItem.specName;
+    return;
+  }
+  formData.materialCode = "";
+  formData.productName = "";
 };
 
 const handleSubmit = () => {
@@ -72,6 +89,7 @@ const handleSubmit = () => {
 };
 
 const handleClose = () => {
+  formData.id = "";
   formRef.value?.resetFields();
 };
 
@@ -82,9 +100,6 @@ const initFormData = (type: "add" | "edit", row?: any) => {
     if (row) {
       // console.log("初始化表单:", row);
       Object.assign(formData, row);
-
-      // 供应商逻辑：supplierList用于回显 supplierProduct用于修改
-      formData.supplierProduct = row?.supplierList.map(item => item.id);
     }
   });
 };
@@ -104,6 +119,16 @@ const handleAddSupplier = () => {
     })
     .catch(() => {});
 };
+
+// 计算属性 - 去重后的条码选项
+const uniqueBarcodeOptions = computed(() => {
+  return Array.from(new Set(props.specGoodsList.map(item => item.barcode))).map(
+    barcode => ({
+      label: barcode,
+      value: barcode
+    })
+  );
+});
 </script>
 
 <template>
@@ -115,6 +140,7 @@ const handleAddSupplier = () => {
       append-to-body
       align-center
       @close="handleClose"
+      :close-on-click-modal="false"
     >
       <el-form
         ref="formRef"
@@ -123,22 +149,21 @@ const handleAddSupplier = () => {
         :rules="rules"
       >
         <!-- 供应商 -->
-        <el-form-item label="供应商" prop="supplierProduct">
+        <el-form-item label="供应商" prop="supplierId">
           <el-space>
             <el-select
-              v-model="formData.supplierProduct"
-              placeholder="请选择供应商（最多选择1个）"
+              v-model="formData.supplierId"
+              placeholder="请选择供应商"
               clearable
               filterable
               style="width: 345px"
-              multiple
-              :multiple-limit="1"
+              @change="handleSupplierChange"
             >
               <el-option
                 v-for="item in props.supplierList"
                 :key="item.id"
                 :label="item.companyName"
-                :value="item.id"
+                :value="item.id.toString()"
               />
             </el-select>
             <el-button type="primary" size="default" @click="handleAddSupplier">
@@ -147,36 +172,36 @@ const handleAddSupplier = () => {
           </el-space>
         </el-form-item>
 
+        <!-- 供应商编码 -->
+        <el-form-item label="供应商编码" prop="supplierCode">
+          <el-input v-model="formData.supplierCode" disabled />
+        </el-form-item>
+
+        <!-- 条码 -->
+        <el-form-item label="条码" prop="barcode">
+          <el-select-v2
+            v-model="formData.barcode"
+            :options="uniqueBarcodeOptions"
+            placeholder="请选择条码（自动匹配料号和品名）"
+            filterable
+            allow-create
+            @change="handleBarcodeChange"
+          />
+        </el-form-item>
+
         <!-- 料号 -->
         <el-form-item label="料号" prop="materialCode">
-          <el-select
-            v-model="formData.materialCode"
-            placeholder="请选择料号（自动匹配品名和条码）"
-            filterable
-            @change="handleMaterialCodeChange"
-          >
-            <el-option
-              v-for="item in props.specGoodsList"
-              :key="item.u9No"
-              :label="item.u9No"
-              :value="item.u9No"
-            />
-          </el-select>
+          <el-input v-model="formData.materialCode" disabled />
         </el-form-item>
 
         <!-- 品名 -->
         <el-form-item label="品名" prop="productName">
-          <el-input v-model="formData.productName" disabled />
+          <el-input v-model="formData.productName" />
         </el-form-item>
 
         <!-- 规格 -->
         <el-form-item label="规格" prop="specification">
           <el-input v-model="formData.specification" />
-        </el-form-item>
-
-        <!-- 条码 -->
-        <el-form-item label="条码" prop="barcode">
-          <el-input v-model="formData.barcode" disabled />
         </el-form-item>
 
         <!-- 单位 -->
@@ -189,27 +214,42 @@ const handleAddSupplier = () => {
           <el-input v-model="formData.referenceCost" />
         </el-form-item>
 
-        <!-- 补充协议 -->
-        <el-form-item label="补充协议" prop="supplementaryAgreement">
-          <PdUpload
-            v-model="formData.supplementaryAgreement"
-            accept=""
-            :file-size="50"
-          />
+        <!-- 交货周期 -->
+        <el-form-item label="交货周期" prop="deliveryCycle">
+          <el-input v-model="formData.deliveryCycle" />
         </el-form-item>
 
-        <!-- 价格变动原因 -->
-        <el-form-item label="价格变动原因" prop="priceChangeReason">
-          <el-input
-            v-model="formData.priceChangeReason"
-            placeholder="请输入价格变动原因"
-            type="textarea"
-            :rows="3"
-          />
+        <!-- 最小起订量 -->
+        <el-form-item label="最小起订量" prop="minimumOrderQuantity">
+          <el-input v-model="formData.minimumOrderQuantity" />
         </el-form-item>
+
+        <div class="mb-[20px]">
+          <RulesCard type="detail">
+            <!-- 补充协议 -->
+            <el-form-item label="补充协议" prop="supplementaryAgreement">
+              <PdUpload
+                v-model="formData.supplementaryAgreement"
+                accept=""
+                :file-size="50"
+              />
+            </el-form-item>
+
+            <!-- 价格变动原因 -->
+            <el-form-item label="价格变动原因" prop="priceChangeReason">
+              <el-input
+                v-model="formData.priceChangeReason"
+                placeholder="请输入价格变动原因"
+                type="textarea"
+                :rows="3"
+              />
+            </el-form-item>
+          </RulesCard>
+        </div>
 
         <el-form-item>
           <div class="w-full flex justify-end">
+            <el-button @click="visible = false"> 取消 </el-button>
             <el-button type="primary" @click="handleSubmit">
               {{ formType === "add" ? "添加" : "编辑" }}
             </el-button>
