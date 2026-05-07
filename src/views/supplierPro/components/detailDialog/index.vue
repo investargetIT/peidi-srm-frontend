@@ -1,4 +1,7 @@
 <script setup lang="ts">
+/**
+ * 供应商 对 产品 根据 供应商+品名 进行关联
+ */
 import { getProductInfo } from "@/api/user";
 import PdUpload from "@/components/PdUpload/index.vue";
 import { dayjs, ElMessage } from "element-plus";
